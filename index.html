@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Linked Device Prototypes</title>
-<meta name="description" content="SHARE 2026: two device concepts that record software version, patient use and glucose for the same person — a connected pen-meter and a CGM + insulin patch. Our concepts; not built or tested.">
+<meta name="description" content="SHARE 2026: two device concepts that record software version, patient use and glucose for the same person — a smart insulin pen with a worn CGM hub and a CGM + insulin patch. Our concepts; not built or tested.">
 <style>
 :root{
   --navy:#102F46; --teal:#087F80; --warm:#A8641F;
@@ -30,7 +30,7 @@ h2{font-size:21px;margin:34px 0 10px;color:var(--head)}
 .tag{font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--muted)}
 .card h3{font-size:20px;margin:4px 0 10px;color:var(--head)}
 .pic{background:radial-gradient(ellipse at 50% 40%,#fff 0%,#E8F1F2 75%);border-radius:10px;height:220px;display:flex;align-items:center;justify-content:center;padding:10px;margin-bottom:12px}
-.pic img{max-width:100%;max-height:100%}
+.pic img{max-width:100%;max-height:100%;mix-blend-mode:multiply}
 .card ul{margin:0 0 14px;padding-left:20px;font-size:15px}
 .card li{margin:3px 0}
 .go{margin-top:auto;display:inline-block;text-align:center;text-decoration:none;font-weight:700;font-size:15px;border-radius:8px;padding:11px 14px;color:#fff;background:var(--teal)}
@@ -87,7 +87,7 @@ footer{border-top:1px solid var(--line);padding:16px;font-size:13px;color:var(--
 
   <h2>How they compare</h2>
   <div class="tbl"><table>
-    <tr><th></th><th>Route 1 · Pen-meter</th><th>Route 2 · Patch</th></tr>
+    <tr><th></th><th>Route 1 · Smart pen + hub</th><th>Route 2 · Patch</th></tr>
     <tr><td>1 · Software version</td><td>Firmware and app version on every dose and reading (pen and hub)</td><td>Firmware and app version on every record</td></tr>
     <tr><td>2 · Patient engagement</td><td>Dose dialled vs delivered (encoder), docking, hub wear</td><td>Insulin delivered, pod changes, wear time, signal gaps</td></tr>
     <tr><td>3 · Clinical outcomes</td><td>Hub CGM every 5 minutes, strip backup; HbA1c from the lab</td><td>Glucose every 5 minutes; HbA1c from the lab</td></tr>
