@@ -162,6 +162,32 @@ ul.rk{color:#33475A}
 .bs.d{background:#E3F1F7;color:#0B4F6E}.bs.b{background:#DDF3E8;color:#17643F}.bs.s{background:#ECE7F7;color:#4B3C86}.bs.a{background:#EEF1F4;color:#4A5763}
 .bgrid input,.bgrid select{background:#fff;color:#1F2D38}
 @media (max-width:700px){.lb{font-size:11.5px;padding:2px 7px 2px 5px}}
+
+/* ---- guided demo + simple view ---- */
+#guide{background:#F3F8F9;border-bottom:2px solid #087F80}
+#guide h2{font-size:16px;color:#102F46;margin:0 0 4px}
+#guide .gsub{color:#5B6B75;font-size:12.5px;margin:0 0 8px}
+#gsteps{display:flex;gap:4px;margin:6px 0 10px}
+#gsteps i{flex:1;height:6px;border-radius:3px;background:#D5E1E5}
+#gsteps i.done{background:#7FBFBF}#gsteps i.cur{background:#087F80}
+#gnum{font-size:12px;font-weight:700;color:#087F80;letter-spacing:.4px;text-transform:uppercase}
+#gtitle{font-size:18px;font-weight:700;color:#102F46;margin:2px 0 6px}
+#gtext{font-size:14px;line-height:1.5;color:#1F2D38;margin:0 0 8px}
+#gtext b{color:#102F46}
+.gpill{display:inline-block;font-size:11.5px;font-weight:700;color:#fff;border-radius:5px;padding:3px 8px;margin:0 4px 4px 0}
+.gp1{background:#102F46}.gp2{background:#087F80}.gp3{background:#A8641F}
+#grec{margin:6px 0 8px;font-size:12.5px;border-collapse:collapse;width:100%;background:#fff}
+#grec td{border:1px solid #CFDADF;padding:4px 7px}#grec td:first-child{color:#5B6B75;width:44%}
+#gsay{font-size:12.5px;color:#5B6B75;border-left:3px solid #A8641F;padding:4px 8px;margin:6px 0 8px;background:#FFF9F0}
+#gnav{display:flex;gap:6px;flex-wrap:wrap}
+#gnav .btn{font-size:14px;padding:8px 14px}
+#gcap{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);max-width:min(92%,720px);background:#102F46;color:#fff;border-radius:10px;padding:10px 16px;font-size:17px;font-weight:700;text-align:center;box-shadow:0 4px 14px rgba(16,47,70,.25);display:none;z-index:6;pointer-events:none}
+#gcap small{display:block;font-size:12.5px;font-weight:400;color:#BFE3E3;margin-top:2px}
+body.guiding #gcap{display:block}
+body.simple .adv{display:none!important}
+#bGuide{background:#087F80;color:#fff;border-color:#087F80;font-weight:700}
+@media (max-width:1100px){#right{order:0}#left{order:1}#stage{height:62vh}}
+@media (max-width:700px){#gcap{font-size:14px;bottom:44px}#gtitle{font-size:16px}}
 </style>
 <body>
 <header>
@@ -185,10 +211,25 @@ ul.rk{color:#33475A}
       <button class="chip" id="bXray">X-ray casings</button>
       <button class="chip" id="bRot">Auto-rotate</button>
       <button class="chip" id="bReset">Reset view</button>
+      <button class="chip" id="bGuide">▶ Guided demo</button>
+      <button class="chip" id="bEng">Engineering details</button>
     </div>
+    <div id="gcap"></div>
     <div id="hint">Drag to orbit · scroll to zoom · click any part or label to inspect</div>
   </section>
   <aside id="right">
+    <div class="card" id="guide">
+      <h2>How the smart pen + hub is used</h2>
+      <p class="gsub">A seven-step walk-through of one dose. Each step moves the 3D model and the simulation for you. Our concept: not built or tested.</p>
+      <div id="gsteps"></div>
+      <div id="gnum"></div>
+      <div id="gtitle"></div>
+      <p id="gtext"></p>
+      <div id="gpills"></div>
+      <div id="grecWrap"></div>
+      <div id="gsay"></div>
+      <div id="gnav"><button class="btn" id="gPrev">◀ Back</button><button class="btn pri" id="gNext">Start ▶</button><button class="btn" id="gExit">Exit demo</button></div>
+    </div>
     <div class="card" id="info"></div>
     <div class="card" id="simcard">
       <h2>Live use-case simulation</h2>
@@ -571,7 +612,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape')select(null);if(sel&&e.key===
 /* labels */
 const tmpV=new THREE.Vector3();let cw=1,ch=1;
 function layoutLabels(){const side=[[],[]];
-  LIST.forEach(p=>{p.lbEl.style.display=labelsOn?'flex':'none';p.lnEl.style.display=labelsOn?'':'none';p.dtEl.style.display=labelsOn?'':'none';if(!labelsOn)return;
+  LIST.forEach(p=>{const vis=labelsOn||(guideFocus&&guideFocus.includes(p.id));p.lbEl.style.display=vis?'flex':'none';p.lnEl.style.display=vis?'':'none';p.dtEl.style.display=vis?'':'none';if(!vis)return;
     p.anchor.getWorldPosition(tmpV);tmpV.project(camera);p.sx=(tmpV.x*.5+.5)*cw;p.sy=(-tmpV.y*.5+.5)*ch;if(!isFinite(p.sx+p.sy)){p.lbEl.style.display='none';p.lnEl.style.display='none';p.dtEl.style.display='none';return;}if(!p.lw)p.lw=p.lbEl.offsetWidth||90;side[p.sx<cw/2?0:1].push(p);});
   side.forEach((arr,si)=>{arr.sort((a,b)=>a.sy-b.sy);const top=62,bot=ch-14,gap=Math.min(23,(bot-top)/Math.max(1,arr.length));let prev=top-gap;arr.forEach(p=>{p.ly=Math.max(p.sy-10,prev+gap);prev=p.ly;});
     const over=prev-(bot-gap);if(over>0){arr.forEach(p=>p.ly-=over);let nx=Infinity;for(let i=arr.length-1;i>=0;i--){arr[i].ly=Math.min(arr[i].ly,nx-gap);nx=arr[i].ly;}}
@@ -592,15 +633,15 @@ canvas.addEventListener('pointerleave',()=>{hover=null;tip.style.display='none';
 controls.addEventListener('start',()=>cam.active=false);
 
 /* visuals */
-let expl=0,explGoal=0;
-const SEL=new THREE.Color(0x38e8ff),HOV=new THREE.Color(0xffffff),AMB=new THREE.Color(0xffb020);
+let expl=0,explGoal=0,guideFocus=null;
+const SEL=new THREE.Color(0x14a3a3),HOV=new THREE.Color(0xffffff),AMB=new THREE.Color(0xffb020);
 const STAGES=[['strip','port','afe'],['mcu','pcb','display'],['dial','encoder','display','injbtn'],['motor','gearbox','rod','stopper','cartridge','needle'],['ble','pcb'],['nelec','nmem','whchip','whbat','hub','ble','display']];
 const STAGE_NAMES=['STRIP CHECK','DECIDE','DIAL & VERIFY','DELIVER','LOG & SYNC','CGM STREAM'];
 const WEAR=['hub','whchip','whbat','whcan','nelec','nmem','skin'];
 function applyVisuals(dt,now){const k=1-Math.exp(-dt*10);expl+=(explGoal-expl)*k*.8;sim.dockS+=(sim.dockGoal-sim.dockS)*Math.min(1,dt*4);
   LIST.forEach(p=>{p.root.position.set(p.ex[0]*expl+(WEAR.includes(p.id)?(1-sim.dockS)*26:0),p.ex[1]*expl,0);
-    const tdim=(sel&&sel!==p.id&&hover!==p.id)?.13:1;p.dim+=(tdim-p.dim)*k;
-    let tg=0,col=SEL;if(sel===p.id)tg=.55;else if(hover===p.id){tg=.32;col=HOV;}else if(sim.stage>=0&&STAGES[sim.stage].includes(p.id)){tg=.3+.2*Math.sin(now*9);col=AMB;}
+    const tdim=(sel&&sel!==p.id&&hover!==p.id)?.13:(guideFocus&&!guideFocus.includes(p.id)&&p.id!=='skin')?.5:1;p.dim+=(tdim-p.dim)*k;
+    let tg=0,col=SEL;if(sel===p.id)tg=.55;else if(guideFocus&&guideFocus.includes(p.id)&&!(sim.stage>=0&&STAGES[sim.stage].includes(p.id))){tg=.22;}else if(hover===p.id){tg=.32;col=HOV;}else if(sim.stage>=0&&STAGES[sim.stage].includes(p.id)){tg=.3+.2*Math.sin(now*9);col=AMB;}
     p.glow+=(tg-p.glow)*k;const sf=xray?.12:1;
     p.mats.forEach(m=>{const f=m.userData.isShell?sf:1;m.opacity=m.userData.baseOp*p.dim*f;m.depthWrite=m.opacity>.85;
       if(m.emissive&&!m.userData.noGlow){if(p.glow>.02){m.emissive.copy(col);m.emissiveIntensity=p.glow*1.25;}else{m.emissive.copy(m.userData.baseEm);m.emissiveIntensity=m.userData.baseEmI;}}});});
@@ -699,8 +740,8 @@ applyOffset();renderInfo();resize();updateUI();
 if(STILL){const e=+(QS.get('ex')||0);explGoal=expl=e;$('exp').value=e;camera.position.set(+(QS.get('cx')||40),+(QS.get('cy')||70),+(QS.get('cz')||200));controls.target.set(-2,e*7,0);cam.active=false;}
 else setTimeout(()=>{explGoal=.5;$('exp').value=.5;cam.goalTarget.set(4,7,0);cam.goalDist=fitDist(.5);cam.active=true;},600);
 let last=performance.now();
-function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last)/1000);last=now;clockNow+=dt;
-  if(cam.active){const k=1-Math.exp(-dt*5);controls.target.lerp(cam.goalTarget,k);const off=camera.position.clone().sub(controls.target);const d=off.length();const nd=d+(cam.goalDist-d)*k;camera.position.copy(controls.target).add(off.setLength(nd));
+function frame(now){requestAnimationFrame(frame);const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;clockNow+=dt;
+  if(cam.active){const k=1-Math.exp(-dt*5);controls.target.lerp(cam.goalTarget,k);const off=camera.position.clone().sub(controls.target);const d=off.length();const nd=d+(cam.goalDist-d)*k;if(cam.goalDir){off.normalize().lerp(cam.goalDir,k).normalize();if(off.angleTo(cam.goalDir)<.01)cam.goalDir=null;}camera.position.copy(controls.target).add(off.setLength(nd));
     if(controls.target.distanceTo(cam.goalTarget)<.05&&Math.abs(nd-cam.goalDist)<.3)cam.active=false;}
   controls.update();
   for(let i=timers.length-1;i>=0;i--){if(clockNow>=timers[i].at){const t=timers.splice(i,1)[0];t.fn();}}
@@ -1022,6 +1063,81 @@ render();
 window.__hw={BOM,SPECS,tot,annual,power};
 })();
 
+</script>
+
+<script>
+/* ===================== guided demo (plain-language, one dose) ===================== */
+(function(){
+const P1='<span class="gpill gp1">1 · Version</span>',P2='<span class="gpill gp2">2 · Use</span>',P3='<span class="gpill gp3">3 · Outcome</span>';
+const STEPS=[
+ {t:'Meet the device',cap:'Two parts: a reusable smart pen and a small hub worn on the skin',
+  x:'The <b>pen</b> holds the insulin and a small motor. The <b>hub</b> is stuck on the skin for several days; it contains a glucose sensor (CGM) and a soft insulin cannula.',
+  say:'“This is our Route 1 concept: a smart pen plus a worn hub. It is a design, not a built device.”',pills:'',
+  go(){resetAll();sim.live=false;dock(false);select(null);guideFocus=['body','dial','cartridge','strip','hub'];view(4,fitDist(.5),.5);}},
+ {t:'The hub reads glucose',cap:'The worn hub measures glucose every 5 minutes',
+  x:'The sensor filament under the skin measures glucose every <b>5 minutes</b> and sends it to the pen and phone by Bluetooth. Nothing for the person to do.',
+  say:'“Outcome data is collected automatically, every 5 minutes, without finger-pricks.”',pills:P3,
+  go(){select(null);guideFocus=['hub','nelec','whchip'];view(45,fitDist(.3)*.72,.3);advance(15);updateUI();}},
+ {t:'Check the reading (strip backup)',cap:'A test strip confirms the reading, or replaces it if the CGM signal drops',
+  x:'The person sees the current glucose. If they want to confirm it, or the CGM signal is lost, they put a <b>test strip</b> in the pen tail; the built-in meter reads it.',
+  say:'“The strip meter is the backup, so a reading is always available.”',pills:P3,
+  go(){select(null);guideFocus=['strip','port','display'];view(-40,fitDist(.2)*.72,.2);doTest();}},
+ {t:'The person decides the dose',cap:'The person dials the dose; nothing is automatic',
+  x:'Before a 50 g lunch the person decides on <b>6 units</b> (example) and turns the dial. The dose advisor stays <b>off</b> in our pilot; the person makes every decision, as with a normal pen.',
+  say:'“Safety first: the person, not the device, decides every dose.”',pills:P2,
+  go(){select(null);guideFocus=['dial','display'];view(-40,fitDist(.2)*.72,.2);sim.Cg+=50;sim.carbs+=50;setDose(6);}},
+ {t:'Dock and inject',cap:'The pen docks into the hub and the motor delivers the dose; no new needle stick',
+  x:'The pen clicks into the hub and the person presses <b>Inject</b>. The motor pushes the insulin through the soft cannula already in the skin, so there is no new needle stick. A sensor checks how much was actually delivered.',
+  say:'“Fewer injections for the person, and an exact record of the dose.”',pills:P2,
+  go(){select(null);guideFocus=['motor','cartridge','needle','hub','whcan'];view(30,fitDist(0)*.8,0);inject();}},
+ {t:'One linked record',cap:'Version, use and outcome saved together for the same person',
+  x:'Every dose becomes one record linking the <b>software version</b>, <b>what the person did</b> and the <b>glucose that followed</b>. These are the three things our review says post-market surveillance should follow together.',
+  say:'“This is the point of the device: our framework’s three pillars in one record.”',pills:P1+P2+P3,rec:true,
+  go(){select(null);guideFocus=null;view(4,fitDist(.5),.5);advance(120);updateUI();}},
+ {t:'If something goes wrong',cap:'A blocked needle is detected, the dose stops and an alert is shown',
+  x:'If the cannula is <b>blocked</b>, the motor detects resistance, stops and reports how much was given, and the alert is logged. If the CGM signal drops, the pen asks for a strip test.',
+  alert:true,say:'“Failures are detected and recorded. In the real study, adverse-event reporting would continue as normal.”',pills:P2,
+  go(){select(null);guideFocus=['motor','needle','display'];view(4,fitDist(.3)*.85,.3);sim.blocked=true;setDose(2);inject();}},
+];
+let gi=-1,pend=null;
+function view(x,d,e,dir){explGoal=e;$('exp').value=e;cam.goalTarget.set(x,e*14,0);cam.goalDist=d;cam.goalDir=new THREE.Vector3(...(dir||[0.05,0.33,0.94])).normalize();cam.active=true;}
+const g=$('guide');
+function resetAll(){clearInterval(pend);timers.length=0;sim.blocked=false;resetSim(false);sim.dropGoal=0;sim.stripGoal=24;sim.dockGoal=0;disp(['Ready',''],0);pushHist();sim.live=false;$('bLive').textContent='▶ Live clock';updateUI();}
+function recHTML(){const ev=sim.events.slice().reverse(),d=ev.find(e=>e.dose!=null),b=ev.find(e=>e.bg!=null);
+  const r=[['Time',fmtT(d?d.t:sim.t)],['Software version','Pen firmware 0.1 · hub 0.1 · app 0.1 (example)'],['Dose dialled',(d?'6.0':'—')+' U'],['Dose delivered (encoder)',d?d.dose.toFixed(2)+' U':'—'],['Docked to hub','Yes, no new puncture'],['Glucose before',b?fmtG(b.bg)+' '+uG()+' (strip)':'—'],['Glucose 2 h after (CGM, simulated)',sim.cgmOK?fmtG(sim.cgm)+' '+uG()+cgmArrow():'signal lost']];
+  return '<table id="grec">'+r.map(x=>'<tr><td>'+x[0]+'</td><td><b>'+x[1]+'</b></td></tr>').join('')+'</table>';}
+function show(){const S=STEPS[gi];
+  $('gsteps').innerHTML=STEPS.map((_,i)=>'<i class="'+(i<gi?'done':i===gi?'cur':'')+'"></i>').join('');
+  $('gnum').textContent='Step '+(gi+1)+' of '+STEPS.length;$('gtitle').textContent=S.t;$('gtext').innerHTML=S.x;$('gpills').innerHTML=S.pills?('<div style="font-size:11.5px;color:#5B6B75;margin-bottom:3px">Recorded:</div>'+S.pills):'';
+  $('gsay').innerHTML='<b>Say:</b> '+S.say;$('grecWrap').innerHTML='';
+  $('gcap').innerHTML=(gi+1)+'. '+S.t+'<small>'+S.cap+'</small>';
+  $('gPrev').disabled=gi<=0;$('gNext').textContent=gi===STEPS.length-1?'Finish ✓':'Next ▶';}
+function run(i){gi=i;document.body.classList.add('guiding');labelsOn=false;$('bLabels').classList.remove('on');show();
+  const S=STEPS[gi];const fire=()=>{S.go();if(S.rec)setTimeout(()=>{if(gi===i)$('grecWrap').innerHTML=recHTML();},300);
+    if(S.alert){const iv=setInterval(()=>{if(gi!==i){clearInterval(iv);return;}if(sim.alerts.occ){clearInterval(iv);const ev=sim.events.filter(e=>e.dose!=null).pop();$('grecWrap').innerHTML='<div style="background:#FDEDEF;border:1px solid #E7A1AB;color:#8A1C2B;border-radius:6px;padding:8px 10px;font-size:13px;margin:4px 0 8px"><b>⛔ Blocked needle detected</b><br>Dose stopped at '+(ev?ev.dose.toFixed(1):'0.0')+' U of 2.0 U. The person is alerted and the event is logged with the software version.</div>';}},150);}};
+  if(sim.busy){clearInterval(pend);pend=setInterval(()=>{if(!sim.busy){clearInterval(pend);fire();}},200);}else fire();
+  g.scrollIntoView({block:'nearest'});}
+function intro(){gi=-1;document.body.classList.remove('guiding');$('gsteps').innerHTML=STEPS.map(()=>'<i></i>').join('');$('gnum').textContent='';$('gtitle').textContent='';
+  $('gtext').innerHTML='Press <b>Start</b> to walk through one dose in 7 steps. Use <b>Engineering details</b> (above the 3D view) for the full simulator, virtual bench and specs.';
+  $('gpills').innerHTML=P1+P2+P3;$('gsay').innerHTML='<b>Tip for presenting:</b> full-screen the browser, keep this panel visible, and press Next as you speak.';$('grecWrap').innerHTML='';
+  $('gPrev').disabled=true;$('gNext').textContent='Start ▶';}
+$('gNext').onclick=()=>{if(gi>=STEPS.length-1){guideFocus=null;resetAll();intro();return;}if(gi===5){sim.blocked=false;}run(gi+1);};
+$('gPrev').onclick=()=>{if(gi<=0)return;const t=gi-1;resetAll();run(t);};
+$('gExit').onclick=()=>{clearInterval(pend);guideFocus=null;resetAll();intro();select(null);};
+$('bGuide').onclick=()=>{run(0);};
+// simple view: hide the engineering panels until asked
+const ADV=['benchcard','hwcard'];ADV.forEach(id=>$(id).classList.add('adv'));
+['kNA','kTemp','kQ'].forEach(id=>$(id).closest('.kpi').classList.add('adv'));
+['b30','off','filt','res'].forEach(id=>$(id).closest('.row').classList.add('adv'));
+$('log').classList.add('adv');
+const STILLQ=new URLSearchParams(location.search).get('still')==='1';
+if(!STILLQ)document.body.classList.add('simple');
+$('bEng').onclick=()=>{const on=document.body.classList.toggle('simple');$('bEng').classList.toggle('on',!on);};
+intro();
+if(new URLSearchParams(location.search).get('demo')==='1'&&!STILLQ)setTimeout(()=>run(0),900);
+// ?step=N opens the demo at step N (fast-forwards the earlier steps)
+{const st=+new URLSearchParams(location.search).get('step');if(st>=1&&st<=STEPS.length&&!STILLQ)setTimeout(()=>{const R=renderer.render;renderer.render=()=>{};try{for(let k=0;k<st;k++){let n=0;while(sim.busy&&n++<900)frame(last+33);run(k);for(let i=0;i<120;i++)frame(last+33);}}finally{renderer.render=R;}},900);}
+})();
 </script>
 </body>
 </html>
