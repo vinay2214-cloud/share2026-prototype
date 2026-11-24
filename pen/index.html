@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Smart Pen + Worn Hub</title>
+<meta name="description" content="Route 1 of our SHARE 2026 concepts: a reusable smart insulin pen that docks into a worn CGM hub, with a strip meter as backup. Concept only; design assumptions, not built or tested.">
+<style>
+.note{margin:8px 0 0;padding:7px 10px;border-radius:7px;border:1px solid #8a6420;background:#2a2008;color:#ffd78a;font-size:12px}
+@media (max-width:1100px){#stage{order:-1} header{height:auto;flex-wrap:wrap;padding:8px 12px;row-gap:6px} header .sp{display:none}}
+body.still header,body.still aside,body.still #toolbar,body.still #hint,body.still #tip{display:none!important}
+body.still main{display:block;height:100%}
+body.still #stage{position:fixed;inset:0;background:transparent}
+body.still{background:transparent}
+:root{
+  --bg:#0c1118; --panel:#121923; --panel2:#182231; --line:#243247; --text:#e6edf6; --muted:#8fa1b8;
+  --accent:#38e8ff; --amber:#ffb020; --good:#3ddc97; --bad:#ff5d6c;
+  --tx:#6ea8ff; --ifc:#c792ff; --pod:#3ddbb7; --cgm:#ffb454; --ins:#ff6fa3; --body:#d8b08a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+header{height:48px;display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+header h1{font-size:15px;margin:0;font-weight:650;letter-spacing:.2px}
+header .sub{color:var(--muted);font-size:12px}
+header .sp{flex:1}
+header .tag{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:2px 9px}
+main{display:grid;grid-template-columns:250px minmax(0,1fr) 370px;height:calc(100% - 48px)}
+aside{overflow:auto;background:var(--panel);border-right:1px solid var(--line)}
+#right{border-right:0;border-left:1px solid var(--line)}
+#stage{position:relative;min-width:0;overflow:hidden;background:radial-gradient(ellipse at 50% 35%,#1a2638 0%,#0c1118 70%)}
+canvas#gl{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none}
+svg#leaders{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#labels{position:absolute;inset:0;pointer-events:none}
+.lb{position:absolute;left:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:6px;white-space:nowrap;background:rgba(14,20,30,.88);border:1px solid var(--line);border-left:3px solid var(--c,#888);border-radius:6px;padding:2px 8px 2px 6px;font-size:11.5px;color:var(--text);backdrop-filter:blur(3px);transition:opacity .2s}
+.lb:hover{background:#1d2b40;border-color:var(--accent)}
+.lb b{color:var(--muted);font-weight:600;font-size:10.5px;min-width:14px;text-align:right}
+.lb.sel{border-color:var(--accent);background:#173044;color:#fff}
+.lb.fade{opacity:.28}
+#dimlb{position:absolute;left:0;top:0;pointer-events:none;font-size:11px;color:#ffe0a8;background:rgba(40,28,10,.85);border:1px solid #8a6420;border-radius:5px;padding:1px 6px;white-space:nowrap}
+#toolbar{position:absolute;left:10px;top:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;z-index:3;max-width:calc(100% - 20px)}
+.chip{background:rgba(18,25,35,.92);border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:12px;display:flex;align-items:center;gap:6px}
+.chip:hover{border-color:#3b5272}
+.chip.on{border-color:var(--accent);color:var(--accent)}
+.chip input[type=range]{width:110px;accent-color:var(--accent)}
+#tip{position:absolute;pointer-events:none;background:#000c;border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:12px;display:none;z-index:4;white-space:nowrap}
+#hint{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);color:var(--muted);font-size:12px;background:rgba(18,25,35,.8);border:1px solid var(--line);padding:4px 12px;border-radius:99px;z-index:2;white-space:nowrap}
+.sec{padding:10px 12px 4px;font-size:10.5px;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:7px}
+.sec i{width:9px;height:9px;border-radius:3px;background:var(--c)}
+.item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:0;border-left:3px solid transparent;padding:5px 12px;color:var(--text)}
+.item:hover{background:var(--panel2)}
+.item.sel{background:#173044;border-left-color:var(--accent)}
+.item .n{color:var(--muted);font-size:11px;min-width:18px;text-align:right}
+.card{padding:12px 14px;border-bottom:1px solid var(--line)}
+.card h2{margin:0 0 6px;font-size:14px}
+.badge{display:inline-block;font-size:10.5px;padding:1px 8px;border-radius:99px;border:1px solid var(--c);color:var(--c);margin-bottom:6px}
+.k{color:var(--muted);font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;margin:9px 0 2px}
+.card p{margin:0 0 4px}
+.deck{border-left:2px solid var(--accent);padding-left:8px;color:#cfe9f0}
+.specs{width:100%;border-collapse:collapse;font-size:12px}
+.specs td{padding:2px 0;vertical-align:top;border-top:1px solid #1d2a3b}
+.specs td:first-child{color:var(--muted);width:42%;padding-right:8px}
+.navrow{display:flex;gap:6px;margin-top:10px}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:5px 10px}
+.btn:hover{border-color:#3b5272}
+.btn.pri{background:#0e4a57;border-color:#1b7f93}
+.btn.on{border-color:var(--accent);color:var(--accent)}
+.btn.warn.on{border-color:var(--bad);color:var(--bad)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:var(--panel2);border:0;padding:5px 11px}
+.seg button.on{background:#0e4a57;color:#fff}
+.big{display:flex;align-items:baseline;gap:8px}
+.big #cgmv{font-size:40px;font-weight:700;letter-spacing:-1px;line-height:1}
+.big small{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:5px 8px}
+.kpi span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.6px}
+.kpi b{font-size:14px}
+.pipe{display:grid;gap:4px;margin-top:8px}
+.st{display:grid;grid-template-columns:78px 1fr;gap:8px;align-items:center;padding:4px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel2);opacity:.65;transition:all .15s}
+.st.act{opacity:1;border-color:var(--amber);box-shadow:0 0 0 1px #ffb02055}
+.st b{font-size:11px;letter-spacing:.5px}
+.st em{font-style:normal;font-size:11.5px;color:#cbd6e4}
+#alert{margin-top:8px;padding:6px 9px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);font-size:12px;display:none}
+#alert.warn{display:block;border-color:#8a6420;background:#2a2008;color:#ffd78a}
+#alert.bad{display:block;border-color:#8a2430;background:#2a0b10;color:#ffb3bb}
+#alert.info{display:block;border-color:#1b7f93;background:#0a2a33;color:#aeeaf5}
+canvas#chart{width:100%;height:170px;display:block;margin-top:8px;background:#0e151f;border:1px solid var(--line);border-radius:8px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.row label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}
+.row input[type=range]{accent-color:var(--accent);flex:1;min-width:90px}
+#log{margin-top:8px;max-height:78px;overflow:auto;font-size:11.5px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+.legend{display:flex;gap:10px;font-size:11px;color:var(--muted);margin-top:4px;flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px}
+footer{padding:10px 14px;color:var(--muted);font-size:11px}
+@media (max-width:1100px){
+  main{grid-template-columns:1fr;height:auto}
+  #stage{height:72vh}
+  aside{max-height:none;border:0}
+  #right{border:0}
+  html,body{overflow:auto;height:auto}
+}
+
+.btab{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px}
+.btab th{color:var(--muted);font-weight:600;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:3px 4px;border-bottom:1px solid var(--line)}
+.btab td{padding:3px 4px;border-top:1px solid #1d2a3b}.btab td.tg{color:var(--muted)}.btab small{color:var(--muted)}
+.pf{font-size:10px;padding:1px 6px;border-radius:99px;font-weight:700}.pf.ok{background:#0f3d2a;color:#6ff0b0}.pf.no{background:#44131b;color:#ff9aa5}
+.vd{margin-top:8px;padding:7px 10px;border-radius:8px;font-weight:600}.vd.ok{background:#0f3d2a;color:#6ff0b0}.vd.warn{background:#3a2c0a;color:#ffd78a}.vd.no{background:#44131b;color:#ffb3bb}
+.bsum{color:var(--muted);font-size:11px;margin-top:6px}.bhead{margin-top:8px;font-size:13px}.bk{color:var(--muted)}.up{color:var(--good)}.dn{color:var(--bad)}
+canvas#sweepCv{width:100%;height:150px;display:none;margin-top:8px;background:#0e151f;border:1px solid var(--line);border-radius:8px}
+.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-top:8px}.bgrid label{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--muted);font-size:12px}
+.bgrid input,.bgrid select{width:70px;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:3px 6px;font:inherit}
+.hcat{background:#152031;color:#cfe0f5;font-weight:600;font-size:11px;letter-spacing:.3px}
+.bs{font-size:10px;padding:1px 6px;border-radius:99px;white-space:nowrap}.bs.d{background:#0a2a33;color:#9fe6f5}.bs.b{background:#0f3d2a;color:#7ff0b8}.bs.s{background:#2b1f44;color:#d2b6ff}.bs.a{background:#2a2f3a;color:#b3bfd0}
+tr.lnk{cursor:pointer}tr.lnk:hover td{background:#173044}
+ul.rk{margin:4px 0 0;padding-left:18px;color:#cbd6e4;font-size:12px}ul.rk li{margin-bottom:3px}
+#hwOut{max-height:560px;overflow:auto}
+
+/* ---- light theme to match the other prototypes ---- */
+:root{--bg:#F7F9FA;--panel:#FFFFFF;--panel2:#EEF3F5;--line:#CFDADF;--text:#1F2D38;--muted:#5B6B75;--accent:#087F80;--amber:#A8641F;--good:#1E8C5A;--bad:#B23A48}
+header{background:#fff}
+header .tag{background:#fff}
+#stage{background:radial-gradient(ellipse at 50% 38%,#ffffff 0%,#EEF4F6 60%,#DCE7EB 100%)}
+.lb{background:rgba(255,255,255,.97);color:#102F46;border:1px solid #C5D3DA;border-left:4px solid var(--c,#888);font-size:13px;font-weight:600;padding:3px 9px 3px 7px;box-shadow:0 1px 3px rgba(16,47,70,.18);backdrop-filter:none}
+.lb b{color:var(--c,#5B6B75);font-size:12px;font-weight:700}
+.lb:hover{background:#E8F1F2;border-color:#087F80}
+.lb.sel{background:#102F46;color:#fff;border-color:#102F46}
+.lb.sel b{color:#A9E0E0}
+.lb.fade{opacity:.22}
+#dimlb{color:#6b4a10;background:#FFF6E6;border-color:#E2B66A}
+.chip{background:rgba(255,255,255,.95);border-color:#C5D3DA;color:#102F46;font-weight:600}
+.chip:hover{border-color:#087F80}
+.chip.on{border-color:#087F80;color:#fff;background:#087F80}
+#tip{background:#102F46;color:#fff;border-color:#102F46}
+#hint{background:rgba(255,255,255,.92);color:#5B6B75;border-color:#C5D3DA}
+.item.sel{background:#E8F1F2;border-left-color:#087F80;color:#102F46;font-weight:700}
+.deck{border-left-color:#087F80;color:#0B5E6E}
+.specs td{border-top-color:#E2EAEE}
+.btn{background:#fff;border-color:#C5D3DA;color:#102F46;font-weight:600}
+.btn:hover{border-color:#087F80}
+.btn.pri{background:#087F80;border-color:#087F80;color:#fff}
+.btn.on{border-color:#087F80;color:#087F80}
+.btn.warn.on{border-color:#B23A48;color:#B23A48}
+.seg button{background:#fff;color:#102F46}
+.seg button.on{background:#087F80;color:#fff}
+.kpi{background:#F3F7F8}
+.st{background:#F3F7F8}
+.st em{color:#33475A}
+.st.act{border-color:#A8641F;box-shadow:0 0 0 1px #A8641F55}
+#alert{background:#F3F7F8}
+#alert.warn{border-color:#E2B66A;background:#FFF6E6;color:#6b4a10}
+#alert.bad{border-color:#E7A1AB;background:#FDEDEF;color:#8A1C2B}
+#alert.info{border-color:#9ED3D4;background:#E8F6F6;color:#0B5E6E}
+canvas#chart,canvas#sweepCv{background:#FFFFFF;border-color:#CFDADF}
+.note{border-color:#E2B66A;background:#FFF6E6;color:#6b4a10}
+.btab td{border-top-color:#E2EAEE}
+.hcat{background:#E8F1F2;color:#102F46}
+tr.lnk:hover td{background:#E8F1F2}
+ul.rk{color:#33475A}
+.pf.ok{background:#DDF3E8;color:#17643F}.pf.no{background:#FBE3E6;color:#8A1C2B}
+.vd.ok{background:#DDF3E8;color:#17643F}.vd.warn{background:#FFF6E6;color:#6b4a10}.vd.no{background:#FBE3E6;color:#8A1C2B}
+.bs.d{background:#E3F1F7;color:#0B4F6E}.bs.b{background:#DDF3E8;color:#17643F}.bs.s{background:#ECE7F7;color:#4B3C86}.bs.a{background:#EEF1F4;color:#4A5763}
+.bgrid input,.bgrid select{background:#fff;color:#1F2D38}
+@media (max-width:700px){.lb{font-size:11.5px;padding:2px 7px 2px 5px}}
+</style>
+<body>
+<header>
+  <h1>Route 1 · Smart insulin pen + worn CGM hub</h1>
+  <span class="sub">SHARE 2026 · Janyavula &amp; Ramireddy · our concept, not built or tested</span>
+  <span class="sp"></span>
+  <a class="tag" href="../" style="text-decoration:none;color:var(--accent)">← Both approaches</a>
+  <a class="tag" href="../patch/" style="text-decoration:none;color:var(--accent)">Route 2: patch →</a>
+  <span class="tag" style="color:var(--amber);border-color:var(--amber)">OUR CONCEPT · DESIGN ASSUMPTIONS · NOT BUILT OR TESTED</span>
+</header>
+<main>
+  <aside id="left"></aside>
+  <section id="stage">
+    <canvas id="gl" tabindex="0"></canvas>
+    <svg id="leaders"></svg>
+    <div id="labels"></div>
+    <div id="tip"></div>
+    <div id="toolbar">
+      <div class="chip">Explode <input id="exp" type="range" min="0" max="1" step="0.01" value="0"></div>
+      <button class="chip" id="bLabels">Labels</button>
+      <button class="chip" id="bXray">X-ray casings</button>
+      <button class="chip" id="bRot">Auto-rotate</button>
+      <button class="chip" id="bReset">Reset view</button>
+    </div>
+    <div id="hint">Drag to orbit · scroll to zoom · click any part or label to inspect</div>
+  </section>
+  <aside id="right">
+    <div class="card" id="info"></div>
+    <div class="card" id="simcard">
+      <h2>Live use-case simulation</h2>
+      <p class="note">Simulation for design exploration, not a glucose or dosing model. The dose advisor is shown to explore the design; in our pilot it would be switched off, and the person decides every dose, until it is clinically validated.</p>
+      <div class="big"><span id="cgmv">--</span><small id="cgmu">mg/dL</small><span style="flex:1"></span><small id="clock"></small></div>
+      <div style="color:var(--muted);font-size:11.5px" id="bgage">No glucose check yet</div>
+      <div class="grid">
+        <div class="kpi"><span>Dial dose</span><b id="kDose">0.0 U</b></div>
+        <div class="kpi"><span>Insulin on board</span><b id="kIOB">0.0 U</b></div>
+        <div class="kpi"><span>Cartridge</span><b id="kRes">200 U</b></div>
+        <div class="kpi"><span>Advisor</span><b id="kAdv">—</b></div>
+        <div class="kpi"><span>Needle</span><b id="kNee">Primed</b></div>
+        <div class="kpi"><span>Battery / BLE</span><b id="kBat">100% · ●</b></div>
+        <div class="kpi"><span>Needle WE current</span><b id="kNA">—</b></div>
+        <div class="kpi"><span>Skin temp</span><b id="kTemp">—</b></div>
+        <div class="kpi"><span>Signal quality</span><b id="kQ">—</b></div>
+      </div>
+      <div class="pipe" id="pipe"></div>
+      <div id="alert"></div>
+      <canvas id="chart"></canvas>
+      <div class="legend"><span><i style="background:#6B7C88"></i>True glucose</span><span><i style="background:#2F6DB5;height:7px;width:7px;border-radius:50%"></i>Strip reading</span><span><i style="background:#C2416F"></i>CGM (worn hub)</span><span><i style="background:#D08A2E"></i>Dose given</span><span><i style="background:#3ddc9755;height:8px"></i>70–180</span></div>
+      <div class="row">
+        <button class="btn pri" id="bTest">① Strip test</button>
+        <button class="btn" id="bLive">⏸ Live clock</button>
+        <button class="btn" id="bMeal">🍽 Meal 50 g</button>
+        <button class="btn" id="bUnit">mg/dL</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="bAdv">② Use advisor dose</button>
+        <button class="btn" id="bMinus">− 0.5</button><button class="btn" id="bPlus">+ 0.5</button>
+        <button class="btn pri" id="bInj">③ Inject</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="b30">+30 min</button><button class="btn" id="b60">+1 h</button>
+        <button class="btn" id="bPrime">New needle + prime</button>
+        <button class="btn warn" id="bBlock">Block needle</button>
+        <button class="btn" id="bDock">Dock / undock pen</button>
+        <button class="btn warn" id="bCgmDrop">CGM signal loss</button>
+        <button class="btn" id="bReset2">Reset</button>
+      </div>
+      <div class="row"><label style="flex:1">Sensor–outlet offset <input id="off" type="range" min="1" max="8" step="0.5" value="5"> <b id="offv" style="color:var(--text)">5.0 mm</b></label></div>
+      <div class="row"><label><input type="checkbox" id="filt" checked> Bolus-aware signal filter</label></div>
+      <div class="row"><label style="flex:1">Cartridge fill <input id="res" type="range" min="0" max="300" step="5" value="200"> <b id="resv" style="color:var(--text)">200 U</b></label></div>
+      <div id="log"></div>
+    </div>
+    <div class="card" id="benchcard">
+      <h2>Virtual test bench — a simulation before hardware</h2>
+      <p style="color:var(--muted);margin:0">Runs many virtual patients through meals, CGM readings from the worn hub, dock-and-dose delivery and occlusions, and compares the smart pen + hub with a standard pen.</p>
+      <div class="bgrid">
+        <label>Patients <select id="bN"><option>10</option><option selected>30</option><option>60</option></select></label>
+        <label>Days <select id="bD"><option>3</option><option selected>7</option><option>14</option></select></label>
+        <label>Seed <input id="bS" type="number" value="1"></label>
+        <label>Occlusion rate % <input id="bOcc" type="number" value="1" step="0.5" min="0"></label>
+        <label>Dose error σ % <input id="bDs" type="number" value="2" step="0.5" min="0"></label>
+        <label>Sensor noise × <input id="bNz" type="number" value="1" step="0.25" min="0.25"></label>
+      </div>
+      <div class="row"><button class="btn pri" id="bRunB">Run validation</button><button class="btn" id="bSweep">Sweep offset</button><button class="btn" id="benchDl" style="display:none">⬇ CSV</button></div>
+      <div class="row"><button class="btn" id="bDemo">▶ Replay a day in 3D</button><span id="demoSt" style="color:var(--muted);font-size:12px"></span></div>
+      <div id="benchOut"></div>
+      <canvas id="sweepCv"></canvas>
+      <div class="legend" id="sweepLg" style="display:none"><span><i style="background:#58a6ff"></i>MARD, filter on</span><span><i style="background:#ff5d6c"></i>MARD, filter off</span><span><i style="background:#ffd98a"></i>current offset</span></div>
+    </div>
+    <div class="card" id="hwcard">
+      <h2>Hardware design specs &amp; BOM</h2>
+      <div class="row" style="margin-top:0"><div class="seg" id="hwSeg"><button data-t="specs" class="on">Specs</button><button data-t="power">Power</button><button data-t="bom">BOM</button><button data-t="cost">Cost</button></div><button class="btn" id="hwCsv">⬇ CSV</button></div>
+      <div id="hwOut"></div>
+    </div>
+    <footer>Our illustrative engineering concept (smart pen + worn CGM hub), following the “reusable electronics + disposable consumable” idea of our design reference — not a real or validated medical device and not a glucose model. All specs, costs and “virtual model” figures are design assumptions or simulation outputs, not measured data. Concept by Vinay Janyavula and Dr. Sriroop Reddy Ramireddy, The Apollo University, SHARE 2026.</footer>
+  </aside>
+</main>
+<script src="../vendor/three.min.js"></script>
+<script src="../vendor/OrbitControls.js"></script>
+<script src="../vendor/RoomEnvironment.js"></script>
+<script>
+"use strict";
+const GROUPS={
+  dose:{name:'Insulin delivery',c:'#087F80'},
+  sense:{name:'Glucose check (strip meter)',c:'#A8641F'},
+  ctrl:{name:'Electronics & power',c:'#2F6DB5'},
+  shell:{name:'Housing & controls',c:'#6A5BA3'},
+  cgm:{name:'Wear hub · stays in skin (continuous CGM)',c:'#C2416F'}
+};
+/* id,name,short,group,explode[dx,dy],link,does,specs */
+const DEF=[
+ ['injbtn','Inject button','Inject button','shell',[0,64],'User confirms every dose — tap-to-confirm, as in our design reference’s open-loop advisor.','Press to start the motorised dose; press-and-hold behaviour is lock-protected until a dose is dialled.',[['Design assumption','Tactile dome switch, 2-stage press (arm → deliver)']]],
+ ['display','OLED display','Display','ctrl',[0,50],'Open-loop CGM-style readout: glucose + bolus advisor.','Shows glucose result, advised dose, dialled dose, countdown and alerts (live in simulator).',[['Design assumption','Monochrome OLED, 128 × 64, readable in sunlight']]],
+ ['mcu','Microcontroller (MCU)','MCU','ctrl',[0,40],'Same “decide” role as the patch MCU: runs advisor and safety logic.','Computes bolus advice (carbs ÷ ICR + correction − insulin on board), enforces max-dose and prime checks, drives the motor, watches motor current.',[['Advisor','Dose = carbs/ICR + (BG−target)/ISF − IOB'],['Design assumption','Low-power Cortex-M with watchdog']]],
+ ['ble','BLE module + antenna','BLE module','ctrl',[0,40],'BLE is in our design reference’s reusable-transmitter stack.','Auto-logs every glucose reading and dose with a timestamp to the phone app.',[['Design assumption','BLE 5.x, meander antenna at PCB edge']]],
+ ['afe','Glucose potentiostat (AFE)','Potentiostat','sense',[0,40],'Design reference: potentiostat reads an electrochemical glucose sensor.','Applies bias to the strip’s working electrode and measures the nanoamp current that is proportional to glucose.',[['Design assumption','3-electrode AFE, 5-s read, ±8% (illustrative meter accuracy)']]],
+ ['pcb','Main PCB','Main PCB','ctrl',[0,30],'Houses BLE · MCU · potentiostat, like the patch transmitter.','Interconnects electronics; flex cable brings strip-port signals in from the tail.',[['Design assumption','Narrow 4-layer rigid-flex board']]],
+ ['encoder','Dose encoder (magnet + Hall)','Dose encoder','ctrl',[-20,22],'—','Magnetic ring turns with the dial; Hall sensor counts 0.5 U detents so the dialled and delivered doses are verified.',[['Resolution','0.5 U per detent (assumed)'],['Why','Independent check of dialled dose']]],
+ ['battery','Rechargeable battery','Battery','ctrl',[-2,-28],'Design reference: reusable body keeps the battery out of the disposable (zero e-waste).','Powers motor, display, radio and meter for weeks per charge.',[['Design assumption','Li-ion cylinder, USB-C / contact charging, ~4 weeks typical']]],
+ ['motor','Micro-drive motor','Micro-drive motor','dose',[-6,-28],'Design reference: reusable micro-drive actuator pumps insulin.','Electronic dose delivery — constant, repeatable injection speed instead of a thumb push.',[['Design assumption','DC gear-motor with current sensing; ~1.2 U/s delivery']]],
+ ['gearbox','Gearbox + drive nut','Gearbox','dose',[2,-28],'Part of the reusable micro-drive.','Reduces motor speed and turns the piston rod through a captive nut.',[['Design assumption','Planetary gearset, ratio ~100:1']]],
+ ['rod','Lead-screw piston rod','Piston rod','dose',[12,-28],'Design reference: lead-screw style micro-drive.','Threaded rod that extends as insulin is dispensed, pushing the cartridge stopper.',[['Pitch','~0.8 mm (illustrative)'],['Resolution','0.5 U ≈ 5 µL ≈ 0.07 mm stopper travel']]],
+ ['stopper','Rubber stopper (piston)','Stopper','dose',[34,0],'—','Elastomer plunger inside the cartridge pushed forward by the rod.',[['Design assumption','Bromobutyl rubber, silicone-lubricated']]],
+ ['cartridge','Insulin cartridge 3 mL','Cartridge 300 U','dose',[34,0],'Design reference: user-filled / user-supplied insulin avoids drug-device combination review; 200–300 U range.','Standard U-100 glass cartridge. Cyan fill level and stopper position are live in the simulator.',[['Capacity','300 U (3 mL U-100)'],['Disposable','Replaced when empty; body is reused']]],
+ ['holder','Cartridge holder','Cartridge holder','shell',[16,0],'—','Threaded front housing that retains the cartridge and mates the needle hub.',[['Design assumption','Transparent polymer with dose-visibility window']]],
+ ['needle','Dock needle (pen connector)','Dock needle','dose',[62,0],'Design reference: disposable consumable keeps the sterile path out of the reusable body; occlusion checks per IEC 60601-2-24.','Short single-use needle on the pen that pierces the hub septum when docked, so dosing goes through the hub cannula and the skin is not punctured. Blockage raises motor current → dose halts + alert.',[['Design assumption','Replace after each use; prime 2 U on every new needle'],['Safety','Prime check + occlusion detection']]],
+ ['dial','Dose dial knob','Dose dial','shell',[-24,0],'—','Rotate to set dose in 0.5 U steps (or accept the advisor value); the knob turns live in the simulator.',[['Range','0.5–20 U per injection (assumed max-dose limit)']]],
+ ['strip','Glucose test strip','Test strip','sense',[-30,0],'Electrochemical sensing like our design reference’s CGM electrode (glucose-oxidase chemistry).','Single-use strip draws a ~0.5 µL blood drop to a reaction zone with working/counter electrodes.',[['Design assumption','GOx/GDH enzyme strip, 3 contacts, 5-s read']]],
+ ['port','Strip port module','Strip port','sense',[-34,0],'Like our design reference’s pogo-pin/pad snap-fit between disposable and reusable parts.','Spring contacts at the pen’s tail mate with the strip and send the signal via a flex cable to the potentiostat.',[['Design assumption','3 gold spring contacts, strip-ejector, sealed slot']]],
+ ['holder2','','','shell',[0,0],'','',[]],
+ ['body','Pen housing','Pen housing','shell',[0,0],'Design reference: durable reusable body, disposable consumables.','Translucent shell that carries the drive, electronics and battery.',[['Design assumption','Ø17 mm × 66 mm polymer body, IP-rated']]]
+ ,
+ ['hub','Wear hub + adhesive + septum port','Wear hub','cgm',[30,0],'Design reference: single-site wear, disposable layer on an adhesive patch (3.5–7 d).','Small adhesive hub that stays on the skin for the whole wear period. Its septum port receives the pen’s dock needle, so every dose goes through the same cannula — no repeated skin punctures.',[['Wear','3.5–7 days (assumed, matches the design-reference pod life)'],['Design assumption','Ø17 mm hub, breathable adhesive, self-sealing septum']]],
+ ['whchip','Hub potentiostat + BLE chip','Hub chip (AFE+BLE)','cgm',[30,30],'Design reference: potentiostat · BLE · MCU in the transmitter stack.','Biases the electrodes and reads the glucose current every 5 min, then streams glucose + trend to the pen and phone over BLE.',[['Interval','5 min'],['Design assumption','Single ASIC: potentiostat + BLE + MCU, ~0.1 mW average']]],
+ ['whbat','Hub coin cell','Hub battery','cgm',[30,-30],'Design reference: battery lives in the transmitter.','Powers the hub for the wear period; discarded with the hub.',[['Design assumption','CR1025-class cell, 7–14 days; or reusable-hub version later']]],
+ ['whcan','Insulin cannula (worn)','Insulin cannula','cgm',[44,0],'Design reference: distal insulin outlet delivers insulin away from the sensor.','Soft cannula that stays in the skin; insulin is injected into it through the septum. Its outlet sits ≥4–6 mm from the sensor filament.',[['Offset','Adjustable in the simulator (target ≥4–6 mm)'],['Design assumption','~6.5 mm, 28G soft cannula']]],
+ ['nelec','Sensor filament + electrodes (WE/RE/CE)','Sensor electrodes','cgm',[44,0],'Design reference: electrochemical sensor on the cannula shaft measures interstitial glucose continuously.','Filament that stays under the skin: gold working electrode with glucose-oxidase, Ag/AgCl reference, platinum counter. Gives a reading every 5 min without any finger or needle action.',[['Reads','Glucose, trend, signal current (nA), skin temperature'],['Design assumption','~0.7 mm filament, ~6 mm depth']]],
+ ['nmem','Permselective membrane','Permselective membrane','cgm',[44,0],'Design reference: permselective membrane blocks m-cresol and phenol interference.','Sleeve over the working electrode that passes glucose but rejects phenolic preservatives from the nearby insulin outlet.',[['Key risk addressed','Insulin–sensor interference'],['Target','Porcine MARD < 10% (design-reference milestone)']]],
+ ['skin','Skin & subcutis','Skin','cgm',[60,0],'Single-site: sensor and insulin outlet share one insertion zone.','Epidermis, dermis and fat layers; the filament and cannula sit in interstitial fluid (epidermis drawn ~5× thicker).',[['Design assumption','Hub stays in place while the pen docks and undocks']]]
+].filter(d=>d[0]!=='holder2');
+const ORDER=['needle','cartridge','stopper','holder','rod','gearbox','motor','body','battery','pcb','mcu','ble','afe','display','injbtn','encoder','dial','port','strip','hub','whchip','whbat','whcan','nelec','nmem','skin'];
+const PART={};DEF.forEach(d=>PART[d[0]]={id:d[0],name:d[1],short:d[2],g:d[3],ex:d[4],link:d[5],does:d[6],specs:d[7],glow:0,dim:1});
+const LIST=ORDER.map(id=>PART[id]);LIST.forEach((p,i)=>p.n=i+1);
+
+/* ---------- three.js ---------- */
+const canvas=document.getElementById('gl');
+THREE.ColorManagement.legacyMode=false;
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera(36,1,1,3000);
+const controls=new THREE.OrbitControls(camera,canvas);controls.enableDamping=true;controls.dampingFactor=.09;controls.minDistance=25;controls.maxDistance=600;controls.autoRotateSpeed=1.4;
+if(THREE.RoomEnvironment){const pm=new THREE.PMREMGenerator(renderer);scene.environment=pm.fromScene(new THREE.RoomEnvironment(),0.04).texture;}
+scene.add(new THREE.HemisphereLight(0xffffff,0xb8c6cf,.55));
+const key=new THREE.DirectionalLight(0xffffff,.8);key.position.set(60,130,90);scene.add(key);
+const fillL=new THREE.DirectionalLight(0xe8f1ff,.35);fillL.position.set(-90,40,-60);scene.add(fillL);
+const grid=new THREE.GridHelper(400,40,0xb7c6cf,0xd3dee3);grid.position.y=-46;grid.material.transparent=true;grid.material.opacity=.6;scene.add(grid);
+const world=new THREE.Group();scene.add(world);
+
+function M(color,o={}){const m=new THREE.MeshStandardMaterial({color,metalness:o.metal??.25,roughness:o.rough??.5,transparent:true,opacity:o.op??1});
+  m.userData.baseOp=o.op??1;m.userData.isShell=!!o.shell;m.depthWrite=(o.op??1)>.9;
+  if(o.em){m.emissive.set(o.em);m.emissiveIntensity=o.emi??.3;}m.userData.baseEm=new THREE.Color(o.em??0);m.userData.baseEmI=o.em?(o.emi??.3):0;return m;}
+function box(w,h,d,mat,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);return m;}
+function cylX(r,len,mat,x,y,z,seg=40){const g=new THREE.CylinderGeometry(r,r,len,seg);g.rotateZ(Math.PI/2);const m=new THREE.Mesh(g,mat);m.position.set(x,y,z);return m;}
+function coneX(rBack,rFront,len,mat,x,y,z){const g=new THREE.CylinderGeometry(rBack,rFront,len,32);g.rotateZ(Math.PI/2);const m=new THREE.Mesh(g,mat);m.position.set(x,y,z);return m;}
+function cylY(r,h,mat,x,y,z,seg=28){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),mat);m.position.set(x,y,z);return m;}
+function tube(pts,r,mat,seg=40){const c=new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(...p)),false,'centripetal');return{mesh:new THREE.Mesh(new THREE.TubeGeometry(c,seg,r,8,false),mat),curve:c};}
+function edges(mesh,col=0xffffff,op=.4,ang=30){const l=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry,ang),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op}));l.material.userData.baseOp=op;l.raycast=()=>{};mesh.add(l);return l;}
+function unitCylX(){const g=new THREE.CylinderGeometry(1,1,1,48);g.rotateZ(Math.PI/2);return g;}
+for(const id in PART){const p=PART[id];p.root=new THREE.Group();p.anchor=new THREE.Object3D();p.root.add(p.anchor);p.dyn=new THREE.Group();p.root.add(p.dyn);world.add(p.root);}
+function A(id,x,y,z){PART[id].anchor.position.set(x,y,z);}
+function put(id,...ms){ms.forEach(m=>PART[id].root.add(m));return ms[0];}
+const shell=m=>{m.userData.shell=true;return m;};
+const BR=8.6,RES_X1=58,CART_LEN=38,CART_R=5.1,CAP=300;
+
+// body
+{const b=shell(cylX(BR,66,M(0xdfe6ee,{op:.32,rough:.18,metal:0,shell:true}),-19,0,0,48));edges(b,0x6f86a0,.45);put('body',b);A('body',-6,BR,5);}
+// holder
+{const h=shell(cylX(7.7,48,M(0xe6f1f7,{op:.26,rough:.12,metal:0,shell:true}),38,0,0,48));edges(h,0x6f86a0,.45);put('holder',h);
+  [15.5,17.5].forEach(x=>PART.holder.root.add(cylX(8.0,.8,M(0xb99cf0,{rough:.5}),x,0,0,48)));A('holder',30,7.7,4);}
+// cartridge
+const insFill=new THREE.Mesh(unitCylX(),M(0x39b8ff,{op:.8,rough:.2,metal:0,em:0x0a5a8a,emi:.5}));
+put('cartridge',cylX(CART_R,CART_LEN,M(0xbfe9ff,{op:.2,rough:.12,metal:0}),RES_X1-CART_LEN/2,0,0),insFill,
+    cylX(2.4,2,M(0x3a3f47,{rough:.8,metal:.1}),RES_X1+1,0,0),cylX(3.1,1.6,M(0xb8c0cc,{metal:.9,rough:.3}),RES_X1+2.2,0,0));A('cartridge',46,CART_R,0);
+// stopper
+const stMov=new THREE.Group();PART.stopper.root.add(stMov);
+{stMov.add(cylX(CART_R-.15,2.8,M(0x20242b,{rough:.9,metal:0}),0,0,0),cylX(CART_R-.35,.5,M(0x2c3139,{rough:.9,metal:0}),1.1,0,0));PART.stopper.anchor.position.set(0,CART_R,0);stMov.add(PART.stopper.anchor);}
+// rod
+const rodG=new THREE.Group(),rodSpin=new THREE.Group();rodG.add(rodSpin);PART.rod.root.add(rodG);
+{class Helix extends THREE.Curve{getPoint(u,t=new THREE.Vector3()){const a=u*26*Math.PI*2;return t.set(u,1.95*Math.cos(a)/1.0,1.95*Math.sin(a));}}
+  const shaft=new THREE.Mesh(unitCylX(),M(0xaeb7c4,{metal:.85,rough:.3}));shaft.scale.set(1,1.6,1.6);shaft.position.x=.5;
+  const hx=new THREE.Mesh(new THREE.TubeGeometry(new Helix(),500,.32,6,false),M(0xe4e8ee,{metal:.9,rough:.25}));hx.scale.set(1,.85,.85);
+  rodSpin.add(shaft,hx);PART.rod.anchor.position.set(0,2.2,0);rodG.add(PART.rod.anchor);PART.rod.anchor.position.set(.5,2.4,0);}
+// gearbox + motor
+put('gearbox',cylX(4.9,6,M(0x8fa0b5,{metal:.8,rough:.35}),-1,-0,0),cylX(5.1,.7,M(0x56657a,{metal:.7}),-3.5,0,0),cylX(5.1,.7,M(0x56657a,{metal:.7}),1.5,0,0));A('gearbox',-1,5,0);
+put('motor',cylX(4,12,M(0xa6aebb,{metal:.85,rough:.3}),-10,0,0),cylX(1.4,1.2,M(0x333,{metal:.5}),-16.4,0,0),cylX(4.1,2.2,M(0x28313f,{metal:.3}),-14,0,0));A('motor',-10,4.2,0);
+// battery
+{const bm=cylX(3.1,26,M(0x4f77a8,{metal:.45,rough:.4}),-35,-3.3,0);put('battery',bm,cylX(1.4,1.2,M(0xd6dde6,{metal:.9}),-21.6,-3.3,0));A('battery',-35,-0.2,0);}
+// PCB & chips
+{const pcb=box(40,.8,10,M(0x1f7a4d,{rough:.55,metal:.2}),-28,5.6,0);edges(pcb,0x9fe9bd,.35);put('pcb',pcb);
+  const cap=M(0xc9a27a,{metal:.2});for(let i=0;i<9;i++)PART.pcb.root.add(box(.9,.5,.5,cap,-46+i*2.4,6.2,-4));A('pcb',-46,6,5);
+  put('mcu',box(6.2,1,6.2,M(0x14171c,{metal:.3,rough:.45}),-27,6.5,0));A('mcu',-27,7.2,0);
+  put('ble',box(7,1,5.4,M(0xbfc6cf,{metal:.8,rough:.3}),-17,6.5,0));
+  const an=tube([[-13,6.2,-3.5],[-12,6.2,-2],[-11,6.2,-3.5],[-10,6.2,-2],[-9,6.2,-3.5],[-8.5,6.2,-2]],.16,M(0xe6b94a,{metal:.9,rough:.3}),30);PART.ble.root.add(an.mesh);A('ble',-17,7.2,0);
+  put('afe',box(5,1,5,M(0x1d3f7a,{metal:.35,rough:.45}),-40,6.5,0));A('afe',-40,7.2,0);}
+// display (canvas texture)
+const dispCv=document.createElement('canvas');dispCv.width=256;dispCv.height=128;const dispTex=new THREE.CanvasTexture(dispCv);
+{const base=box(19,.9,10.4,M(0x0c0f14,{metal:.3,rough:.3}),-32,8.35,0);
+  const scr=new THREE.Mesh(new THREE.PlaneGeometry(15.5,7.4),new THREE.MeshBasicMaterial({map:dispTex,transparent:true}));scr.material.userData.baseOp=1;scr.rotation.x=-Math.PI/2;scr.position.set(-32,8.82,0);
+  put('display',base,scr);A('display',-32,9,0);}
+// inject button
+{put('injbtn',cylY(3.5,2.2,M(0xff7a45,{rough:.45,metal:.15}),-18,9.7,0),cylY(4.4,.8,M(0x9a4a2a,{rough:.6}),-18,8.7,0));A('injbtn',-18,11,0);}
+// encoder
+{const g=new THREE.Group();g.add(cylX(5.6,1,M(0x39424f,{metal:.5}),-50.6,0,0));
+  for(let i=0;i<12;i++){const a=i/12*Math.PI*2,m=box(1,.9,1.5,M(i%2?0xff5d6c:0x58a6ff,{metal:.3}),-50.6,5.6*Math.cos(a)*0+0,0);m.position.set(-50.6,5.2*Math.cos(a),5.2*Math.sin(a));m.rotation.x=a;g.add(m);}
+  PART.encoder.root.add(g);const hall=box(1.4,1.2,2.2,M(0x14171c,{metal:.3}),-49.4,5.8,0);PART.encoder.root.add(hall);A('encoder',-50.6,6,0);PART.encoder.spin=g;}
+// dial knob
+const dialG=new THREE.Group();PART.dial.root.add(dialG);
+{dialG.add(cylX(9.6,12,M(0x7a5fc7,{rough:.5,metal:.15}),-56,0,0,56));
+  for(let i=0;i<28;i++){const a=i/28*Math.PI*2,m=box(12,1.1,1.5,M(0x9d86e8,{rough:.5}),-56,0,0);m.position.set(-56,9.9*Math.cos(a),9.9*Math.sin(a));m.rotation.x=a;dialG.add(m);}
+  PART.dial.anchor.position.set(-56,10.6,0);}
+// port module + contacts + FPC
+{const gold=M(0xf0c75a,{metal:.9,rough:.25});
+  put('port',cylX(7.2,14,M(0x39424f,{rough:.6,metal:.25}),-69,0,0),box(1.3,1.6,7,M(0x07090c,{rough:.9}),-76.1,0,0));
+  [-2.4,0,2.4].forEach(z=>PART.port.root.add(box(2.6,.5,1.1,gold,-71.5,.95,z)));
+  const f=tube([[-70,0,2.6],[-62,1,2.6],[-56,3.5,2.6],[-48,5.4,2.6],[-46,5.8,2.6]],.4,M(0xff9f43,{rough:.5,metal:.1}),30);PART.port.root.add(f.mesh);PART.port.fpc=f.curve;A('port',-69,7.2,0);}
+// strip
+const stripMov=new THREE.Group();PART.strip.root.add(stripMov);
+const drop=new THREE.Mesh(new THREE.SphereGeometry(1.5,16,12),M(0xd7263d,{rough:.2,metal:0,op:.95,em:0x7a0f1e,emi:.5}));drop.userData.noGlow=true;
+{stripMov.add(box(26,.5,5.6,M(0xf3ecd2,{rough:.7,metal:0}),-79,.4,0));
+  [-1.6,0,1.6].forEach(z=>stripMov.add(box(24,.12,.5,M(0xe6b94a,{metal:.9,rough:.3}),-79,.7,z)));
+  stripMov.add(box(3.4,.2,4.2,M(0x7a2630,{rough:.6,metal:0}),-90.5,.75,0));stripMov.add(box(1.6,.35,5.6,M(0x9b8f63,{rough:.8}),-92.3,.4,0));
+  drop.position.set(-93.4,.7,0);drop.scale.setScalar(.01);stripMov.add(drop);
+  PART.strip.anchor.position.set(-84,1.6,0);stripMov.add(PART.strip.anchor);}
+// needle
+{const nm=M(0xd6dde6,{metal:.9,rough:.25});
+  put('needle',coneX(3.7,1.7,4.6,M(0x4aa8ff,{op:.7,rough:.35,metal:.05}),RES_X1+4.3,0,0),cylX(.42,6.2,nm,RES_X1+9.8,0,0),cylX(.36,3.4,nm,RES_X1+.4,0,0),coneX(3.9,3.9,.8,M(0x2f7fcf,{rough:.5}),RES_X1+2.4,0,0));
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(.42,1,12),nm);tip.rotation.z=-Math.PI/2;tip.position.set(RES_X1+13.4,0,0);PART.needle.root.add(tip);A('needle',RES_X1+9,.6,0);}
+
+// ---- wear hub (stays in skin) ----
+{const skm=(c,o)=>M(c,{op:o,rough:.9,metal:0});
+  [[.5,0xe9b79a,.8,75.25],[3.5,0xd98c7a,.55,77.25],[20,0xf0d99a,.42,89]].forEach(([w,c,o,x])=>{const m=box(w,40,40,skm(c,o),x,0,0);m.userData.shell=true;edges(m,0xb9898a,.25);PART.skin.root.add(m);});A('skin',80,18,18);
+  put('hub',cylX(15,.6,M(0xf4eee2,{op:.9,rough:.9,metal:0}),74.7,0,0,56),(()=>{const h=cylX(8.5,5,M(0xff8fb8,{op:.3,rough:.35,metal:.1,shell:true}),71.5,0,0,48);h.userData.shell=true;edges(h,0xC2416F,.45);return h;})(),
+      cylX(3.4,3,M(0xd96a98,{rough:.5,metal:.1}),67.5,0,0,28),cylX(2.6,.5,M(0x1d3f7a,{rough:.8,metal:0}),66,0,0,24));A('hub',70,8.5,0);
+  put('whchip',box(.8,5,7,M(0x14171c,{metal:.3,rough:.45}),73.2,-4.8,-1),box(.5,7.5,9,M(0x1f7a4d,{rough:.5}),73.9,-4,-1));A('whchip',73.4,-7.6,-1);
+  put('whbat',cylX(2.7,1.5,M(0xcfd5de,{metal:.9,rough:.3}),71.2,4.8,0,28));A('whbat',71.2,7.8,0);
+  PART.whcan.dyn.add(cylX(.46,7,M(0xff7aa8,{op:.82,rough:.3,metal:0}),78.5,0,0,18),cylX(.2,.5,M(0xffffff,{op:.9,metal:0}),82,0,0,10));
+  const gold=M(0xffb300,{metal:.9,rough:.3,em:0x5a3a00,emi:.45}),ag=M(0xe8edf2,{metal:.95,rough:.2}),pt=M(0x4b525c,{metal:.9,rough:.35});
+  PART.nelec.dyn.add(cylX(.36,6.5,M(0xdbe3ea,{metal:.8,rough:.3}),78.5,0,0,14),cylX(.56,.9,pt,77.4,0,0,20),cylX(.56,.9,ag,78.6,0,0,20),cylX(.56,1.4,gold,80,0,0,20));
+  PART.nmem.dyn.add(cylX(.72,1.9,M(0xff8a65,{op:.42,rough:.3,metal:0}),79.9,0,0,22));}
+const sensFluid=M(0x7ec8ff,{op:.55,rough:.2,metal:0});
+function applyOffset(){const off=sim.offset,zs=-off/2,z0=off/2;
+  PART.nelec.dyn.position.z=zs;PART.nmem.dyn.position.z=zs;PART.whcan.dyn.position.z=z0;
+  A('whcan',80,.9,z0);A('nelec',78.6,.9,zs);A('nmem',80,.9,zs);
+  while(PART.hub.dyn.children.length){const c=PART.hub.dyn.children.pop();c.geometry&&c.geometry.dispose();}
+  PART.hub.dyn.add(tube([[66.4,0,0],[70,0,0],[72.5,0,z0*.4],[74.8,0,z0]],.55,sensFluid,30).mesh);
+  [PART.hub,PART.nelec,PART.nmem,PART.whcan].forEach(finalize);rebuildPick();}
+/* flows *//* flows */
+const flows={};
+function buildFlow(name,segs,n,color,r){const f={segs,n,t:0,items:[]};const mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.95});mat.userData.flow=true;
+  for(let i=0;i<n;i++){const row=[];segs.forEach(([g])=>{const m=new THREE.Mesh(new THREE.SphereGeometry(r,10,8),mat);m.visible=false;m.raycast=()=>{};g.add(m);row.push(m);});f.items.push(row);}flows[name]=f;}
+function stepFlow(f,speed,dt,active){if(!f)return;if(active)f.t=(f.t+dt*speed)%1;
+  for(let i=0;i<f.n;i++){const ph=(f.t+i/f.n)%1,k=f.segs.length,idx=Math.min(k-1,Math.floor(ph*k)),u=ph*k-idx;f.items[i].forEach((m,j)=>{m.visible=active&&j===idx;if(m.visible)m.position.copy(f.segs[j][1].getPoint(u));});}}
+buildFlow('sig',[[stripMov,new THREE.LineCurve3(new THREE.Vector3(-91,.9,0),new THREE.Vector3(-67,.9,0))],[PART.port.root,PART.port.fpc]],3,.55,0xffd36a);
+buildFlow('nsense',[[PART.nelec.dyn,new THREE.LineCurve3(new THREE.Vector3(81,0,0),new THREE.Vector3(75.2,0,0))]],4,.45,0xffd36a);
+buildFlow('ins',[[PART.needle.root,new THREE.LineCurve3(new THREE.Vector3(RES_X1-1,0,0),new THREE.Vector3(RES_X1+13,0,0))]],5,.6,0x9fe3ff);
+
+// ground shadow
+{const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),g=x.createRadialGradient(64,64,4,64,64,64);g.addColorStop(0,'rgba(16,47,70,.16)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,128,128);
+ const sh=new THREE.Mesh(new THREE.PlaneGeometry(260,70),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));sh.rotation.x=-Math.PI/2;sh.position.set(-10,-45.5,0);sh.raycast=()=>{};scene.add(sh);}
+function finalize(p){p.meshes=[];p.mats=[];p.root.traverse(o=>{
+  if(o.isMesh&&!o.material.userData.flow){o.userData.partId=p.id;p.meshes.push(o);}
+  if((o.isMesh||o.isLineSegments)&&o.material&&!o.material.userData.flow){const m=o.material;if(!('baseOp' in m.userData))m.userData.baseOp=m.opacity;if(!p.mats.includes(m))p.mats.push(m);}});}
+LIST.forEach(finalize);
+const pickables=[];function rebuildPick(){pickables.length=0;LIST.forEach(p=>pickables.push(...p.meshes));}rebuildPick();
+const bq=new THREE.QuadraticBezierCurve3(new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3());let bleT=0;
+const bleLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({length:31},()=>new THREE.Vector3())),new THREE.LineDashedMaterial({color:0xff9fc6,dashSize:2,gapSize:2,transparent:true,opacity:.5}));bleLine.raycast=()=>{};bleLine.frustumCulled=false;scene.add(bleLine);
+const bleDots=[];for(let i=0;i<5;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.75,10,8),new THREE.MeshBasicMaterial({color:0xff9fc6}));m.raycast=()=>{};m.visible=false;scene.add(m);bleDots.push(m);}
+function updateBle(dt,active){PART.whchip.anchor.getWorldPosition(bq.v0);PART.ble.anchor.getWorldPosition(bq.v2);bq.v1.copy(bq.v0).lerp(bq.v2,.5).add(new THREE.Vector3(0,34,30));
+  const pos=bleLine.geometry.attributes.position;for(let i=0;i<=30;i++){const p=bq.getPoint(i/30);pos.setXYZ(i,p.x,p.y,p.z);}pos.needsUpdate=true;bleLine.computeLineDistances();bleLine.visible=sim.cgmOK;
+  if(active)bleT=(bleT+dt*.6)%1;bleDots.forEach((m,i)=>{m.visible=active&&sim.cgmOK;if(m.visible)m.position.copy(bq.getPoint((bleT+i/5)%1));});}
+
+/* ---------- simulation ---------- */
+const P={ISF:30,ICR:10,tau:55,CF:3.0,taum:45,target:120,maxDose:20};
+const sim={};
+function resetSim(keepRes){Object.assign(sim,{t:0,G:165,I1:0,I2:0,Cg:0,carbs:0,reservoir:keepRes?sim.reservoir:200,bg:null,bgT:null,advice:null,dose:0,primed:true,blocked:false,
+  unit:sim.unit||'mg',hist:[],events:[],log:[],stage:-1,stageUntil:0,busy:null,stripS:24,stripGoal:24,dropGoal:0,alerts:{},lowOverride:false,battery:100,doseDeliv:0,doseTarget:0,injPhase:null,holdT:0,
+    dispMsg:null,dispUntil:0,dialAng:0,dialGoal:0,ble:true,speedNote:'',Gisf:165,cgm:165,cgmPrev:165,cgmT:0,cgmPrevT:0,cgmOK:true,cgmDrop:false,cgmAlert:null,na:21,temp:33.6,qual:96,trend5:0,docked:true,dockS:1,dockGoal:1,live:true,liveAcc:0,offset:sim.offset||5,artifact:0,filter:sim.filter??true});
+  if(sim.hist) pushHist();}
+function pushHist(){sim.hist.push({t:sim.t,G:sim.G,cgm:sim.cgmOK?sim.cgm:null});if(sim.hist.length>400)sim.hist.shift();}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const fmtG=g=>sim.unit==='mg'?Math.round(g):(g/18.016).toFixed(1);
+const uG=()=>sim.unit==='mg'?'mg/dL':'mmol/L';
+const fmtT=t=>{const m=Math.floor(t+420);return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');};
+const iob=()=>sim.I1+sim.I2;
+function log(m){sim.log.unshift(fmtT(sim.t)+'  '+m);sim.log.length=Math.min(30,sim.log.length);}
+function advance(mins){for(let i=0;i<mins;i++){const cd=sim.Cg/P.taum;sim.Cg-=cd;sim.G=clamp(sim.G+P.CF*cd-P.ISF*(sim.I2/P.tau),35,450);
+  const i1=sim.I1;sim.I1-=i1/P.tau;sim.I2+=(i1-sim.I2)/P.tau;sim.Gisf+=(sim.G-sim.Gisf)/6;sim.artifact*=Math.exp(-.1);sim.t++;if(sim.t%5===0){cgmRead();pushHist();}}
+  if(sim.G<70&&!sim.alerts.low){sim.alerts.low=true;log('⚠ True glucose falling below 70');}if(sim.G>=75)sim.alerts.low=false;}
+const artA=o=>60*Math.exp(-(o-1)/1.6);
+function cgmRead(){const S=sim;if(S.cgmDrop){if(S.cgmOK)log('⚠ CGM signal lost — hub not reporting');S.cgmOK=false;S.qual=0;return;}
+  let v=S.Gisf+(Math.random()-.5)*4+S.artifact;if(S.filter)v-=S.artifact*.92;
+  if(!S.cgmOK)log('CGM signal restored');
+  S.cgmPrev=S.cgm;S.cgm=Math.max(40,v);S.cgmT=S.t;S.cgmOK=true;S.trend5=S.cgm-S.cgmPrev;
+  S.na=.12*S.cgm+1.2;S.temp=33.2+Math.random()*1.2;S.qual=Math.round(92+Math.random()*7);
+  const c=S.cgm,k=c<55?'urgent':c<70?'low':c>250?'high':null;if(k&&S.cgmAlert!==k)log(k==='urgent'?'⛔ CGM urgent low '+fmtG(c):k==='low'?'⚠ CGM low '+fmtG(c):'⚠ CGM high '+fmtG(c));S.cgmAlert=k;}
+function dock(on,cb){const S=sim;S.docked=on;S.dockGoal=on?1:0;log(on?'Pen docked to wear hub — dose goes through the worn cannula':'Pen undocked — hub stays on skin, still monitoring');if(cb)later(on?1.1:0,cb);updateUI();}
+function best(){const S=sim;const c=[];if(S.bg!=null)c.push({v:S.bg,t:S.bgT,src:'strip'});if(S.cgm!=null)if(S.cgmOK)c.push({v:S.cgm,t:S.cgmT,src:'CGM'});if(!c.length)return null;c.sort((a,b)=>b.t-a.t);const b=c[0];return{v:b.v,src:S.t-b.t>30?b.src+' (stale)':b.src,age:S.t-b.t};}
+function refreshAdvice(){const b=best();if(!b){sim.advice=null;return;}let a=sim.carbs/P.ICR+Math.max(0,(b.v-P.target)/P.ISF)-iob();sim.advice=b.v<70?0:Math.max(0,Math.round(a*2)/2);}
+resetSim(false);pushHist();
+
+/* tiny scheduler (real seconds) */
+const timers=[];let clockNow=0;
+function later(s,fn){timers.push({at:clockNow+s,fn});}
+function setStage(i,s){sim.stage=i;sim.stageUntil=clockNow+s;}
+function disp(msg,s){sim.dispMsg=msg;sim.dispUntil=s?clockNow+s:1e9;drawDisp();}
+
+function doTest(){
+  if(sim.busy)return;sim.busy='test';sim.alerts.strip=false;
+  log('Strip inserted → port contacts wake the meter');setStage(0,6);disp(['Strip OK','Apply blood'],3);
+  sim.stripGoal=0;
+  later(1.1,()=>{sim.dropGoal=1;disp(['Blood detected','Testing…'],3.5);});
+  later(1.5,()=>disp(['Testing…','4'],1));later(2.5,()=>disp(['Testing…','3'],1));later(3.5,()=>disp(['Testing…','2'],1));later(4.5,()=>disp(['Testing…','1'],1));
+  later(5.4,()=>{
+    const m=Math.round(sim.G*(1+(Math.random()-.5)*.1));sim.bg=m;sim.bgT=sim.t;sim.events.push({t:sim.t,bg:m});
+    sim.lowOverride=false;
+    // advisor
+    refreshAdvice();
+    log('Glucose '+fmtG(m)+' '+uG()+' (strip) · synced to phone');
+    disp([fmtG(m)+' '+uG(),m<70?'LOW – treat':'Advise '+(sim.advice||0).toFixed(1)+' U'],0);
+    setStage(1,2.5);sim.dropGoal=0;sim.stripGoal=24;
+    if(m<70){sim.alerts.lowbg=true;log('⚠ Low glucose — advisor blocks dose, treat hypoglycaemia first');}else sim.alerts.lowbg=false;
+    later(.2,()=>setStage(4,1.4));
+    sim.busy=null;updateUI();
+  });
+  updateUI();
+}
+function setDose(d){sim.dose=clamp(d,0,P.maxDose);sim.dialGoal=sim.dose*.9;if(d>P.maxDose){sim.alerts.max=true;log('⚠ Max dose limit '+P.maxDose+' U');later(3,()=>{sim.alerts.max=false;updateUI();});}
+  setStage(2,1.3);disp(['DOSE','▲ '+sim.dose.toFixed(1)+' U'],0);updateUI();}
+function inject(){
+  if(sim.busy)return;
+  if(sim.dose<=0){sim.alerts.nodose=true;later(2.5,()=>{sim.alerts.nodose=false;updateUI();});updateUI();return;}
+  if(!sim.primed){sim.alerts.prime=true;log('⚠ New needle not primed');later(3,()=>{sim.alerts.prime=false;updateUI();});updateUI();return;}
+  {const b=best();if(b&&b.v<70&&!sim.lowOverride){sim.lowOverride=true;log('⚠ Dose blocked: '+b.src+' '+fmtG(b.v)+'. Press Inject again to override.');updateUI();return;}}
+  if(sim.reservoir<=.2){sim.alerts.empty=true;log('⛔ Cartridge empty — replace cartridge');updateUI();return;}
+  if(!sim.docked){sim.busy='dock';dock(true,()=>{sim.busy=null;inject();});return;}
+  sim.busy='inject';sim.doseTarget=sim.dose;sim.doseDeliv=0;sim.injPhase='drive';sim.alerts={};
+  setStage(3,1e3);log('Inject: delivering '+sim.dose.toFixed(1)+' U');updateUI();
+}
+function prime(){if(sim.busy)return;sim.busy='prime';sim.primed=false;sim.blocked=false;$('bBlock').classList.remove('on');log('New needle fitted — priming 2 U');setStage(3,2);disp(['PRIME','2.0 U'],1.8);
+  sim.injPhase='prime';sim.doseTarget=2;sim.doseDeliv=0;}
+function stepInject(dt){
+  const S=sim;if(!S.injPhase)return;
+  if(S.injPhase==='drive'||S.injPhase==='prime'){
+    const rate=S.injPhase==='prime'?2.2:1.2;let du=Math.min(rate*dt,S.doseTarget-S.doseDeliv,S.reservoir);
+    if(S.injPhase==='drive'&&S.blocked&&S.doseDeliv>=Math.min(.7,S.doseTarget*.3)){ // stall
+      S.injPhase=null;S.busy=null;S.alerts.occ=true;finishDose(true);return;}
+    S.doseDeliv+=du;S.reservoir-=du;
+    if(S.injPhase==='drive')disp(['DELIVERING',(S.doseTarget-S.doseDeliv).toFixed(1)+' U left'],0);
+    if(S.reservoir<=.05&&S.doseDeliv<S.doseTarget-.05){S.injPhase=null;S.busy=null;S.alerts.empty=true;finishDose(true);return;}
+    if(S.doseDeliv>=S.doseTarget-1e-6){
+      if(S.injPhase==='prime'){S.injPhase=null;S.busy=null;S.primed=true;log('Prime complete — ready');disp(['Ready',''],1.5);setStage(-1,0);updateUI();return;}
+      S.injPhase='hold';S.holdT=6;setStage(3,1e3);}
+  }else if(S.injPhase==='hold'){S.holdT-=dt;disp(['HOLD NEEDLE',Math.ceil(Math.max(0,S.holdT))+' s'],0);
+    if(S.holdT<=0){S.injPhase=null;S.busy=null;finishDose(false);}}
+}
+function finishDose(stalled){
+  const S=sim,d=S.doseDeliv;
+  if(!stalled||d>0){S.I1+=stalled?(d):d;S.events.push({t:S.t,dose:d});}
+  S.carbs=0;
+  if(stalled&&S.alerts.occ){log('⛔ Occlusion: motor current spike — stopped at '+d.toFixed(1)+' U of '+S.doseTarget.toFixed(1)+' U');disp(['BLOCKED','Delivered '+d.toFixed(1)],0);}
+  else if(stalled){log('⛔ Cartridge ran out at '+d.toFixed(1)+' U');disp(['EMPTY',d.toFixed(1)+' U given'],0);}
+  else{log('✔ '+d.toFixed(2)+' U delivered · logged & synced');disp(['DONE',d.toFixed(1)+' U logged'],2.5);}
+  S.dose=0;S.dialGoal=0;S.advice=null;setStage(4,1.6);later(1.8,()=>{if(!S.busy&&S.docked)dock(false);});S.artifact+=d*artA(S.offset);updateUI();
+}
+</script>
+<script>
+/* ===================== UI ===================== */
+const $=id=>document.getElementById(id);
+const left=$('left');
+(function(){let h='';const byG={};LIST.forEach(p=>(byG[p.g]=byG[p.g]||[]).push(p));
+  ['dose','sense','ctrl','shell','cgm'].forEach(g=>{h+=`<div class="sec" style="--c:${GROUPS[g].c}"><i></i>${GROUPS[g].name}</div>`;byG[g].forEach(p=>{h+=`<button class="item" data-id="${p.id}"><span class="n">${p.n}</span>${p.name}</button>`;});});
+  left.innerHTML=h;left.addEventListener('click',e=>{const b=e.target.closest('.item');if(b)select(b.dataset.id,true);});})();
+const labelsEl=$('labels'),svg=$('leaders'),NS='http://www.w3.org/2000/svg';
+let sel=null,hover=null,labelsOn=true,xray=false;
+LIST.forEach(p=>{const b=document.createElement('button');b.className='lb';b.style.setProperty('--c',GROUPS[p.g].c);b.innerHTML=`<b>${p.n}</b>${p.short}`;
+  b.addEventListener('click',e=>{e.stopPropagation();select(p.id,true);});b.addEventListener('pointerenter',()=>hover=p.id);b.addEventListener('pointerleave',()=>{if(hover===p.id)hover=null;});
+  labelsEl.appendChild(b);p.lbEl=b;
+  const ln=document.createElementNS(NS,'polyline');ln.setAttribute('fill','none');ln.setAttribute('stroke',GROUPS[p.g].c);ln.setAttribute('stroke-width','1');svg.appendChild(ln);p.lnEl=ln;
+  const dt=document.createElementNS(NS,'circle');dt.setAttribute('r','2.6');dt.setAttribute('fill',GROUPS[p.g].c);svg.appendChild(dt);p.dtEl=dt;});
+const cam={active:false,goalTarget:new THREE.Vector3(-10,0,0),goalDist:215};
+function select(id,focus){sel=id;document.querySelectorAll('.item').forEach(b=>b.classList.toggle('sel',b.dataset.id===sel));LIST.forEach(p=>p.lbEl.classList.toggle('sel',p.id===sel));renderInfo();
+  if(sel&&focus){const bb=new THREE.Box3().setFromObject(PART[sel].root);cam.goalTarget.copy(bb.getCenter(new THREE.Vector3()));cam.goalDist=clamp(bb.getSize(new THREE.Vector3()).length()*2.3+40,70,260);cam.active=true;const el=left.querySelector('.item.sel');if(el)el.scrollIntoView({block:'nearest'});}}
+function renderInfo(){const el=$('info');
+  if(!sel){el.innerHTML=`<h2>Component inspector</h2><p style="color:var(--muted)">Click any part in the 3D view, on a label, or in the list. Use <b>Explode</b> to pull the pen apart along its axis.</p>
+  <div class="k">How the pen works</div>
+  <p><b style="color:#ff6fa3">Wear hub</b>: a small adhesive hub stays in the skin with the sensor filament + insulin cannula and streams glucose to the pen every 5 min (continuous CGM). The pen only <b>docks</b> to it to dose — no repeated punctures.</p>
+  <p><b>①</b> Insert a <b style="color:var(--cgm)">test strip</b> to confirm or when CGM is lost → potentiostat reads blood glucose.</p>
+  <p><b>②</b> MCU advisor suggests a dose from glucose, carbs and insulin on board; dial adjusts in 0.5 U steps.</p>
+  <p><b>③</b> Press <b style="color:var(--ins,#ff6fa3)">inject</b>: motor + lead-screw push the cartridge stopper through the pen needle; encoder verifies the dose, BLE logs both.</p>`;return;}
+  const p=PART[sel],g=GROUPS[p.g];
+  el.innerHTML=`<span class="badge" style="--c:${g.c}">${g.name}</span><h2>${p.n}. ${p.name}</h2><div class="k">What it does</div><p>${p.does}</p>
+  ${p.link&&p.link!=='—'?`<div class="k">Link to our design reference</div><p class="deck">${p.link}</p>`:''}<div class="k">Specs &amp; notes</div><table class="specs">${p.specs.map(s=>`<tr><td>${s[0]}</td><td>${s[1]}</td></tr>`).join('')}</table>
+  <div class="navrow"><button class="btn" id="bPrev">◀ Prev</button><button class="btn" id="bNext">Next ▶</button><button class="btn" id="bAll">Show all</button></div>`;
+  $('bPrev').onclick=()=>stepSel(-1);$('bNext').onclick=()=>stepSel(1);$('bAll').onclick=()=>select(null);}
+function stepSel(d){const i=LIST.findIndex(p=>p.id===sel);select(LIST[(i+d+LIST.length)%LIST.length].id,true);}
+addEventListener('keydown',e=>{if(e.key==='Escape')select(null);if(sel&&e.key==='ArrowRight')stepSel(1);if(sel&&e.key==='ArrowLeft')stepSel(-1);});
+
+/* labels */
+const tmpV=new THREE.Vector3();let cw=1,ch=1;
+function layoutLabels(){const side=[[],[]];
+  LIST.forEach(p=>{p.lbEl.style.display=labelsOn?'flex':'none';p.lnEl.style.display=labelsOn?'':'none';p.dtEl.style.display=labelsOn?'':'none';if(!labelsOn)return;
+    p.anchor.getWorldPosition(tmpV);tmpV.project(camera);p.sx=(tmpV.x*.5+.5)*cw;p.sy=(-tmpV.y*.5+.5)*ch;if(!isFinite(p.sx+p.sy)){p.lbEl.style.display='none';p.lnEl.style.display='none';p.dtEl.style.display='none';return;}if(!p.lw)p.lw=p.lbEl.offsetWidth||90;side[p.sx<cw/2?0:1].push(p);});
+  side.forEach((arr,si)=>{arr.sort((a,b)=>a.sy-b.sy);const top=62,bot=ch-14,gap=Math.min(23,(bot-top)/Math.max(1,arr.length));let prev=top-gap;arr.forEach(p=>{p.ly=Math.max(p.sy-10,prev+gap);prev=p.ly;});
+    const over=prev-(bot-gap);if(over>0){arr.forEach(p=>p.ly-=over);let nx=Infinity;for(let i=arr.length-1;i>=0;i--){arr[i].ly=Math.min(arr[i].ly,nx-gap);nx=arr[i].ly;}}
+    arr.forEach(p=>{const x=si===0?10:cw-10-p.lw,ex=si===0?10+p.lw:x;p.lbEl.style.transform=`translate(${x}px,${p.ly}px)`;
+      p.lnEl.setAttribute('points',`${ex},${p.ly+10} ${si===0?ex+14:ex-14},${p.ly+10} ${p.sx},${p.sy}`);p.dtEl.setAttribute('cx',p.sx);p.dtEl.setAttribute('cy',p.sy);
+      const dim=sel&&sel!==p.id;p.lbEl.classList.toggle('fade',!!dim);p.lnEl.style.opacity=dim?.12:.7;p.dtEl.style.opacity=dim?.15:1;});});}
+
+/* picking */
+const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
+function pickAt(cx,cy){const r=canvas.getBoundingClientRect();mouse.set(((cx-r.left)/r.width)*2-1,-((cy-r.top)/r.height)*2+1);ray.setFromCamera(mouse,camera);
+  let shellHit=null;for(const h of ray.intersectObjects(pickables,false)){if(h.object.userData.shell){if(!shellHit)shellHit=h.object;continue;}return h.object.userData.partId;}return shellHit?shellHit.userData.partId:null;}
+let down=null;canvas.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};cam.active=false;});
+canvas.addEventListener('pointerup',e=>{if(!down)return;const mv=Math.hypot(e.clientX-down.x,e.clientY-down.y);down=null;if(mv<5){const id=pickAt(e.clientX,e.clientY);select(id,!!id);}});
+const tip=$('tip');let mvP=false,lastMv=null;
+canvas.addEventListener('pointermove',e=>{lastMv=e;if(mvP||down)return;mvP=true;requestAnimationFrame(()=>{mvP=false;const id=pickAt(lastMv.clientX,lastMv.clientY);hover=id;canvas.style.cursor=id?'pointer':'grab';
+  if(id){const r=$('stage').getBoundingClientRect();tip.style.display='block';tip.textContent=PART[id].n+'. '+PART[id].name;tip.style.left=(lastMv.clientX-r.left+14)+'px';tip.style.top=(lastMv.clientY-r.top+12)+'px';}else tip.style.display='none';});});
+canvas.addEventListener('pointerleave',()=>{hover=null;tip.style.display='none';});
+controls.addEventListener('start',()=>cam.active=false);
+
+/* visuals */
+let expl=0,explGoal=0;
+const SEL=new THREE.Color(0x38e8ff),HOV=new THREE.Color(0xffffff),AMB=new THREE.Color(0xffb020);
+const STAGES=[['strip','port','afe'],['mcu','pcb','display'],['dial','encoder','display','injbtn'],['motor','gearbox','rod','stopper','cartridge','needle'],['ble','pcb'],['nelec','nmem','whchip','whbat','hub','ble','display']];
+const STAGE_NAMES=['STRIP CHECK','DECIDE','DIAL & VERIFY','DELIVER','LOG & SYNC','CGM STREAM'];
+const WEAR=['hub','whchip','whbat','whcan','nelec','nmem','skin'];
+function applyVisuals(dt,now){const k=1-Math.exp(-dt*10);expl+=(explGoal-expl)*k*.8;sim.dockS+=(sim.dockGoal-sim.dockS)*Math.min(1,dt*4);
+  LIST.forEach(p=>{p.root.position.set(p.ex[0]*expl+(WEAR.includes(p.id)?(1-sim.dockS)*26:0),p.ex[1]*expl,0);
+    const tdim=(sel&&sel!==p.id&&hover!==p.id)?.13:1;p.dim+=(tdim-p.dim)*k;
+    let tg=0,col=SEL;if(sel===p.id)tg=.55;else if(hover===p.id){tg=.32;col=HOV;}else if(sim.stage>=0&&STAGES[sim.stage].includes(p.id)){tg=.3+.2*Math.sin(now*9);col=AMB;}
+    p.glow+=(tg-p.glow)*k;const sf=xray?.12:1;
+    p.mats.forEach(m=>{const f=m.userData.isShell?sf:1;m.opacity=m.userData.baseOp*p.dim*f;m.depthWrite=m.opacity>.85;
+      if(m.emissive&&!m.userData.noGlow){if(p.glow>.02){m.emissive.copy(col);m.emissiveIntensity=p.glow*1.25;}else{m.emissive.copy(m.userData.baseEm);m.emissiveIntensity=m.userData.baseEmI;}}});});
+  // strip / drop / dial
+    const S=sim;S.stripS+=(S.stripGoal-S.stripS)*Math.min(1,dt*5);stripMov.position.x=-S.stripS;
+  const dg=S.dropGoal,ds=drop.scale.x;drop.scale.setScalar(ds+(Math.max(.01,dg)-ds)*Math.min(1,dt*6));
+  S.dialAng+=(S.dialGoal-S.dialAng)*Math.min(1,dt*8);dialG.rotation.x=S.dialAng;PART.encoder.spin.rotation.x=S.dialAng;
+  // reservoir geometry
+  const U=Math.max(0,S.reservoir),L=Math.max(.5,CART_LEN*U/CAP);
+  insFill.scale.set(L,CART_R*.96,CART_R*.96);insFill.position.set(RES_X1-L/2,0,0);insFill.visible=U>.2;
+  stMov.position.x=RES_X1-L-1.4;
+  const x0=2,len=Math.max(1,(RES_X1-L-1.4)-x0);rodG.position.x=x0;rodG.scale.x=len;
+  if(S.injPhase==='drive'||S.injPhase==='prime')rodSpin.rotation.x+=dt*18*(S.blocked&&S.doseDeliv>.6?0:1);
+}
+/* display */
+function drawDisp(){const c=dispCv.getContext('2d');c.fillStyle='#07120d';c.fillRect(0,0,256,128);c.fillStyle='#9dffb8';c.textAlign='center';
+  let a,b;if(sim.dispMsg&&clockNow<sim.dispUntil){[a,b]=sim.dispMsg;}else{a=fmtT(sim.t);const bb=best();b=bb?fmtG(bb.v)+cgmArrow()+(bb.src==='strip'?'*':''):'No reading';}
+  c.font='bold 30px monospace';c.fillText(a,128,52);c.font='bold 36px monospace';c.fillStyle='#e6fff0';c.fillText(b,128,102);dispTex.needsUpdate=true;}
+
+function cgmArrow(){const d=sim.trend5;return sim.cgm==null?'':(d>8?' ↑↑':d>3?' ↗':d<-8?' ↓↓':d<-3?' ↘':' →');}
+/* UI update */
+const pipe=$('pipe');pipe.innerHTML=STAGE_NAMES.map((n,i)=>`<div class="st" id="st${i}" style="order:${i===5?-1:i}"><b style="color:var(--amber);font-size:10px">${i+1} ${n}</b><em id="stx${i}">—</em></div>`).join('');
+function updateUI(){const S=sim;
+  const bb=best();$('cgmv').textContent=bb?fmtG(bb.v):'--';$('cgmu').textContent=uG()+(bb&&bb.src.startsWith('CGM')?cgmArrow():'');
+  $('cgmv').style.color=!bb?'var(--muted)':(bb.v<70?'var(--bad)':(bb.v>180?'var(--amber)':'var(--good)'));
+  $('bgage').textContent=bb?`Latest: ${bb.src} · ${bb.age} min ago`+(S.cgmOK?' · CGM live every 5 min':' · CGM signal lost')+(S.bg!=null?` · strip ${fmtG(S.bg)}`:''):'Waiting for first CGM reading';
+  $('clock').textContent=`Hub ${(S.t/1440).toFixed(2)}/7 d · `+fmtT(S.t);
+  $('kDose').textContent=S.dose.toFixed(1)+' U';$('kIOB').textContent=iob().toFixed(1)+' U';$('kRes').textContent=S.reservoir.toFixed(1)+' U';
+  $('kAdv').textContent=S.advice==null?'—':S.advice.toFixed(1)+' U';$('kNee').textContent=S.blocked?'Cannula blocked':(S.docked?'Docked':'Undocked')+(S.primed?'':' · unprimed');$('kNee').style.color=S.blocked?'var(--bad)':'';
+  $('kBat').textContent=Math.round(S.battery)+'% · ● synced';
+  $('stx0').textContent=S.bg==null?'Waiting for strip':`${fmtG(S.bg)} ${uG()} (meter, ±5%)`;$('stx5').textContent=S.cgmOK?`${fmtG(S.cgm)} ${uG()}${cgmArrow()} · ${S.na.toFixed(1)} nA · BLE`:'No signal from hub';$('kNA').textContent=S.cgmOK?S.na.toFixed(1)+' nA':'—';$('kTemp').textContent=S.cgmOK?S.temp.toFixed(1)+' °C':'—';$('kQ').textContent=S.cgmOK?S.qual+'%':'—';
+  $('stx1').textContent=S.advice==null?'Carbs '+S.carbs+' g · IOB '+iob().toFixed(1)+' U':`${S.carbs} g/${P.ICR} + corr − IOB ${iob().toFixed(1)} = ${S.advice.toFixed(1)} U`;
+  $('stx2').textContent=`Dialled ${S.dose.toFixed(1)} U · encoder ${Math.round(S.dose*2)} detents`;
+  $('stx3').textContent=S.injPhase==='drive'||S.injPhase==='hold'?`${S.doseDeliv.toFixed(1)} / ${S.doseTarget.toFixed(1)} U${S.injPhase==='hold'?' · hold 6 s':''}`:'Motor idle';
+  $('stx4').textContent=S.events.length?`${S.events.length} entries synced to phone`:'Nothing logged';
+  const al=$('alert'),A=S.alerts;let t=null,c='';
+  if(A.occ){c='bad';t='⛔ <b>Occlusion</b> — motor current spiked, dose stopped, user alerted. Fit a new needle and re-prime.';}
+  else if(A.empty){c='bad';t='⛔ <b>Cartridge empty</b> — replace the cartridge (slider below).';}
+  else if(A.prime){c='warn';t='⚠ <b>Prime needle first</b> — press “New needle + prime”.';}
+  else if(A.nodose){c='warn';t='⚠ Dial a dose first (or use the advisor).';}
+  else if(A.max){c='warn';t='⚠ <b>Max dose limit</b> '+P.maxDose+' U.';}
+  else if(bb&&bb.v<55){c='bad';t='⛔ <b>Urgent low</b> '+fmtG(bb.v)+' — treat now.';}
+  else if(S.cgmDrop){c='warn';t='⚠ <b>CGM signal lost</b> — hub not reporting; advisor uses the last strip reading. Test with a strip.';}
+  else if(bb&&bb.v>250){c='warn';t='⚠ <b>High glucose</b> '+fmtG(bb.v)+' — check ketones if unwell.';}
+  else if(A.lowbg||(bb&&bb.v<70&&S.advice===0)){c='bad';t='⚠ <b>Low glucose</b> — treat first. Dosing is blocked unless you override.';}
+  else if(S.reservoir<20&&S.reservoir>0){c='warn';t='ℹ Cartridge low: '+S.reservoir.toFixed(0)+' U left.';}
+  if(t){al.className=c;al.innerHTML=t;al.style.display='block';}else{al.className='';al.style.display='none';}
+  $('log').innerHTML=S.log.map(l=>`<div>${l}</div>`).join('');
+  $('resv').textContent=Math.round(S.reservoir)+' U';$('res').value=S.reservoir;$('bBlock').classList.toggle('on',S.blocked);
+  drawDisp();drawChart();}
+function drawChart(){const c=$('chart'),dpr=Math.min(devicePixelRatio,2),w=c.clientWidth,h=c.clientHeight;if(!w)return;
+  if(c.width!==Math.round(w*dpr)){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);}
+  const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,h);
+  const S=sim,WIN=360,tE=Math.max(S.t,WIN),tS=tE-WIN,padL=30,padR=6,gH=h*.76,iy0=gH+6,iH=h-iy0-14;
+  const X=t=>padL+(t-tS)/WIN*(w-padL-padR),Y=g=>gH-(g-40)/(320-40)*(gH-8)-2;
+  x.fillStyle='rgba(61,220,151,.10)';x.fillRect(padL,Y(180),w-padL-padR,Y(70)-Y(180));
+  x.strokeStyle='#DCE5EA';x.fillStyle='#5B6B75';x.font='10px -apple-system,sans-serif';x.textAlign='right';
+  [70,180,250].forEach(g=>{x.beginPath();x.moveTo(padL,Y(g));x.lineTo(w-padR,Y(g));x.stroke();x.fillText(S.unit==='mg'?g:(g/18.016).toFixed(1),padL-4,Y(g)+3);});
+  x.textAlign='center';for(let hh=0;hh<=6;hh+=2){const tt=tS+hh*60;if(tt>=0)x.fillText(fmtT(tt),X(tt),h-3);}
+  const H=S.hist.filter(p=>p.t>=tS);x.strokeStyle='#6B7C88';x.setLineDash([3,3]);x.beginPath();H.forEach((p,i)=>i?x.lineTo(X(p.t),Y(p.G)):x.moveTo(X(p.t),Y(p.G)));x.stroke();x.setLineDash([]);
+  x.strokeStyle='#C2416F';x.lineWidth=1.8;x.beginPath();let st=false;H.forEach(p=>{if(p.cgm==null){st=false;return;}st?x.lineTo(X(p.t),Y(p.cgm)):x.moveTo(X(p.t),Y(p.cgm));st=true;});x.stroke();x.lineWidth=1;
+  S.events.forEach(e=>{if(e.t<tS)return;if(e.bg!=null){x.fillStyle='#2F6DB5';x.beginPath();x.arc(X(e.t),Y(e.bg),3.5,0,7);x.fill();}
+    if(e.dose!=null){x.fillStyle='#D08A2E';const bh=Math.min(iH,e.dose/8*iH);x.fillRect(X(e.t)-2,iy0+iH-bh,4,bh);}});
+  x.strokeStyle='#DCE5EA';x.beginPath();x.moveTo(padL,iy0+iH);x.lineTo(w-padL-padR+padL,iy0+iH);x.stroke();}
+
+/* wiring */
+// fit the whole pen + hub (about 200 units long) in view, leaving room for the label columns
+function fitDist(e){const a=camera.aspect||1.5,hf=2*Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*a);
+  const use=labelsOn?(cw<700?0.55:0.7):0.88;return Math.max(240+60*e,(112/Math.tan(hf/2))/use);}
+function toggle(id,fn,on){const b=$(id);if(on)b.classList.add('on');b.addEventListener('click',()=>{b.classList.toggle('on');fn(b.classList.contains('on'));});}
+$('exp').addEventListener('input',e=>{explGoal=+e.target.value;cam.goalTarget.set(4,explGoal*14,0);cam.goalDist=Math.max(camera.position.distanceTo(controls.target),fitDist(explGoal));cam.active=true;});
+toggle('bLabels',v=>{labelsOn=v;cam.goalTarget.copy(controls.target);cam.goalDist=fitDist(explGoal);cam.active=true;},true);toggle('bXray',v=>xray=v);toggle('bRot',v=>controls.autoRotate=v);
+$('bReset').addEventListener('click',()=>{cam.goalTarget.set(4,explGoal*14,0);cam.goalDist=fitDist(explGoal);cam.active=true;});
+$('bTest').onclick=doTest;$('bInj').onclick=inject;$('bPrime').onclick=prime;
+$('bMeal').onclick=()=>{sim.Cg+=50;sim.carbs+=50;log('🍽 Meal 50 g eaten (carbs entered)');refreshAdvice();updateUI();};
+$('bAdv').onclick=()=>{refreshAdvice();if(sim.advice==null){log('No glucose value — wait for CGM or test with a strip');return updateUI();}setDose(sim.advice);};
+$('bPlus').onclick=()=>setDose(sim.dose+.5);$('bMinus').onclick=()=>setDose(sim.dose-.5);
+$('b30').onclick=()=>{advance(30);updateUI();};$('b60').onclick=()=>{advance(60);updateUI();};
+$('bBlock').onclick=()=>{sim.blocked=!sim.blocked;log(sim.blocked?'Needle blockage injected':'Needle unblocked');updateUI();};
+$('bCgmDrop').onclick=()=>{sim.cgmDrop=!sim.cgmDrop;$('bCgmDrop').classList.toggle('on',sim.cgmDrop);$('bCgmDrop').textContent=sim.cgmDrop?'Restore CGM':'CGM signal loss';updateUI();};
+$('bDock').onclick=()=>{if(sim.busy)return;dock(!sim.docked);};
+$('bLive').onclick=()=>{sim.live=!sim.live;$('bLive').textContent=sim.live?'⏸ Live clock':'▶ Live clock';};
+$('off').addEventListener('input',e=>{sim.offset=+e.target.value;$('offv').textContent=sim.offset.toFixed(1)+' mm';applyOffset();updateUI();});
+$('filt').addEventListener('change',e=>{sim.filter=e.target.checked;log('Bolus-aware filter '+(sim.filter?'ON':'OFF'));});
+$('bUnit').onclick=()=>{sim.unit=sim.unit==='mg'?'mmol':'mg';$('bUnit').textContent=sim.unit==='mg'?'mg/dL':'mmol/L';updateUI();};
+$('bReset2').onclick=()=>{resetSim(true);pushHist();updateUI();};
+$('res').addEventListener('input',e=>{sim.reservoir=+e.target.value;sim.alerts.empty=false;if(sim.reservoir>0)log('Cartridge set to '+sim.reservoir+' U');updateUI();});
+
+function resize(){const r=$('stage').getBoundingClientRect();cw=r.width;ch=r.height;renderer.setSize(cw,ch,false);camera.aspect=cw/ch;camera.updateProjectionMatrix();drawChart();LIST.forEach(p=>p.lw=0);}
+new ResizeObserver(resize).observe($('stage'));
+camera.position.set(0,90,275);controls.target.set(4,0,0);
+const QS=new URLSearchParams(location.search);const STILL=QS.get('still')==='1';
+if(STILL){document.body.classList.add('still');scene.remove(grid);renderer.setClearColor(0xffffff,1);document.documentElement.style.background='#fff';document.body.style.background='#fff';labelsOn=QS.get('labels')==='1';$('bLabels').classList.toggle('on',labelsOn);sim.live=false;}
+if(!STILL&&innerWidth<700){labelsOn=false;$('bLabels').classList.remove('on');}
+applyOffset();renderInfo();resize();updateUI();
+if(STILL){const e=+(QS.get('ex')||0);explGoal=expl=e;$('exp').value=e;camera.position.set(+(QS.get('cx')||40),+(QS.get('cy')||70),+(QS.get('cz')||200));controls.target.set(-2,e*7,0);cam.active=false;}
+else setTimeout(()=>{explGoal=.5;$('exp').value=.5;cam.goalTarget.set(4,7,0);cam.goalDist=fitDist(.5);cam.active=true;},600);
+let last=performance.now();
+function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last)/1000);last=now;clockNow+=dt;
+  if(cam.active){const k=1-Math.exp(-dt*5);controls.target.lerp(cam.goalTarget,k);const off=camera.position.clone().sub(controls.target);const d=off.length();const nd=d+(cam.goalDist-d)*k;camera.position.copy(controls.target).add(off.setLength(nd));
+    if(controls.target.distanceTo(cam.goalTarget)<.05&&Math.abs(nd-cam.goalDist)<.3)cam.active=false;}
+  controls.update();
+  for(let i=timers.length-1;i>=0;i--){if(clockNow>=timers[i].at){const t=timers.splice(i,1)[0];t.fn();}}
+  if(sim.stage>=0&&clockNow>sim.stageUntil)sim.stage=-1;
+  if(sim.dispMsg&&clockNow>sim.dispUntil&&sim.dispUntil<1e8){sim.dispMsg=null;drawDisp();}
+  if(sim.live){sim.liveAcc+=dt/2.5*(sim.liveSpeed||1);let n=0;while(sim.liveAcc>=1&&n++<8){sim.liveAcc-=1;advance(5);if(sim.stage<0)setStage(5,.9);if(window.demoStep)demoStep();updateUI();}}
+  stepInject(dt);
+  if(sim.injPhase==='drive'||sim.injPhase==='hold'||sim.injPhase==='prime'){if(Math.floor(clockNow*5)!==sim._lu){sim._lu=Math.floor(clockNow*5);updateUI();}}
+  stepFlow(flows.nsense,1.2,dt,sim.stage===5&&sim.cgmOK);updateBle(dt,sim.stage===5);
+  stepFlow(flows.sig,1.3,dt,sim.stage===0&&sim.stripS<2);
+  stepFlow(flows.ins,1.4,dt,(sim.injPhase==='drive'||sim.injPhase==='prime')&&!(sim.blocked&&sim.doseDeliv>.6));
+  for(let i=0;i<6;i++){const e=$('st'+i);if(e)e.classList.toggle('act',sim.stage===i);}
+  applyVisuals(dt,clockNow);renderer.render(scene,camera);layoutLabels();}
+requestAnimationFrame(frame);
+window.__dbg={PART,sim,select,doTest,inject,setDose,prime};
+</script>
+<script>
+/* ===================== Virtual test bench (headless Monte-Carlo) ===================== */
+(function(){
+const artAf=o=>60*Math.exp(-(o-1)/1.6);
+function rng(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+function gauss(r){let u=0;while(!u)u=r();const v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const clampB=(v,a,b)=>Math.max(a,Math.min(b,v));
+const mean=a=>{const x=a.filter(v=>v!=null&&isFinite(v));return x.length?x.reduce((s,v)=>s+v,0)/x.length:NaN;};
+const sd=a=>{const x=a.filter(v=>v!=null&&isFinite(v)),m=mean(x);return x.length>1?Math.sqrt(x.reduce((s,v)=>s+(v-m)**2,0)/(x.length-1)):NaN;};
+
+function runPatient(arm,cfg,seed){
+  const rp=rng(seed),gp=()=>gauss(rp),rd=rng(seed*7919+(arm==='pen'?11:23)),gd=()=>gauss(rd);
+  const pt={ISF:Math.max(15,30*(1+.2*gp())),ICR:Math.max(5,10*(1+.15*gp())),tau:Math.max(35,55*(1+.1*gp())),CF:Math.max(1.8,3*(1+.1*gp())),bias:1+.07*gp(),drift:Math.max(0,.015+.01*gp())};
+  const eISF=pt.ISF*(1+.1*gp()),eICR=pt.ICR*(1+.1*gp());
+  const meals=[];for(let d=0;d<cfg.days;d++){const b=d*1440;
+    meals.push({t:Math.max(5,b+30+Math.round(20*gp())),c:Math.max(25,50+15*gp())},{t:b+330+Math.round(30*gp()),c:Math.max(25,60+15*gp())},{t:b+720+Math.round(30*gp()),c:Math.max(30,70+20*gp())});
+    if(rp()<.5)meals.push({t:b+510,c:20,snack:true});}
+  meals.sort((a,b)=>a.t-b.t);meals.forEach(m=>{m.est=m.c*(1+.2*gp());});
+  const N=cfg.days*1440,Gm1=new Float32Array(N),ref=[],cg=[];
+  let lastRescue=-999,G=130,Gi=130,I1=0,I2=0,Cg=0,art=0,ar=0,drop=0,mi=0,lastDose=-9999,lastMeal=-9999,cgmNow=null,cgmPrev=null;
+  const pending=[],recs=[],peaks=[];let occE=0,occD=0,occU=0,lostU=0;
+  const filt=cfg.filter?.08:1;
+  function addIns(u){I1+=u;if(arm==='pen'){art+=u*artAf(cfg.offset)*(1+.2*gd());peaks.push(art*filt);}}
+  function deliver(cmd,t){if(cmd<=0)return;const rec={cmd,del:0};recs.push(rec);lastDose=t;
+    if(arm==='pen'){
+      if(rd()<cfg.occ){occE++;if(rd()<cfg.detect){occD++;const part=Math.min(.7,cmd*.3);addIns(part);rec.del+=part;pending.push({t:t+10,u:cmd-part,rec});}else{occU++;lostU+=cmd;}}
+      else{const d=cmd*(1+cfg.dsig*gd());addIns(d);rec.del=d;}
+    }else{let d=cmd*(1+.08*gd());if(rd()<.05)d*=.85;addIns(d);rec.del=d;}}
+  for(let t=0;t<N;t++){
+    while(mi<meals.length&&meals[mi].t<=t){const m=meals[mi++];Cg+=m.c;lastMeal=t;
+      if(!m.snack){
+        if(arm==='pen'){const Gm=cgmNow!=null?cgmNow:G*(1+.05*gd());
+          let c=Gm<70?0:m.est/eICR+Math.max(0,(Gm-120)/eISF)-.8*(I1+I2);c=Math.max(0,Math.round(c*2)/2);deliver(c,t);}
+        else{if(rd()<.1)continue;const Gm=G*(1+.05*gd());if(Gm<70)continue;const c=Math.max(0,Math.round(m.est/eICR+Math.max(0,(Gm-120)/eISF)));deliver(c,t);}
+      }}
+    for(let i=pending.length-1;i>=0;i--)if(pending[i].t<=t){const p=pending.splice(i,1)[0];const d=p.u*(1+cfg.dsig*gd());addIns(d);p.rec.del+=d;}
+    const cd=Cg/45;Cg-=cd;
+    G=clampB(G+pt.CF*cd-pt.ISF*(I2/pt.tau)-.0006*(G-100)+pt.drift,30,500);
+    const i1=I1;I1-=i1/pt.tau;I2+=(i1-I2)/pt.tau;
+    Gi+=(G-Gi)/clampB(6+gd()*0,3,12);art*=Math.exp(-.1);Gm1[t]=G;
+    if(t%5===0){if(arm==='mdi'){if(G<55&&t-lastRescue>45&&rd()<.5){Cg+=15;lastRescue=t;}}
+      ref.push(G);
+      if(arm==='pen'){
+        if(t<30){cg.push(null);}
+        else if(drop>0){drop--;cg.push(null);cgmPrev=cgmNow;cgmNow=null;}
+        else{if(rd()<.004){drop=3+Math.floor(rd()*6);cg.push(null);cgmNow=null;}
+          else{ar=.7*ar+cfg.noise*4*gd();let raw=Gi*pt.bias*(1-.004*t/1440)+ar+art*filt;raw*=1+.03*cfg.noise*gd();raw=clampB(raw,40,400);cg.push(raw);cgmPrev=cgmNow;cgmNow=raw;if(raw<70&&t-lastRescue>45&&rd()<.8){Cg+=15;lastRescue=t;}
+            if(cgmNow>200&&t-lastDose>180&&t-lastMeal>90){const c=(cgmNow-120)/eISF-.8*(I1+I2);if(c>=1)deliver(Math.round(c*2)/2,t);}}}
+      }}
+  }
+  // metrics
+  const o={};const n=ref.length;
+  let tir=0,tbr=0,tbr54=0,tar=0,tar250=0,s=0;ref.forEach(g=>{s+=g;if(g>=70&&g<=180)tir++;if(g<70)tbr++;if(g<54)tbr54++;if(g>180)tar++;if(g>250)tar250++;});
+  o.tir=100*tir/n;o.tbr=100*tbr/n;o.tar=100*tar/n;o.mean=s/n;o.gmi=3.31+.02392*o.mean;
+  let ep=0,run=0;for(let t=0;t<N;t++){if(Gm1[t]<70){run++;if(run===15)ep++;}else run=0;}o.hypoEp=ep/(cfg.days/7);
+  const rr=recs.filter(r=>r.cmd>0);o.dAcc=100*rr.filter(r=>Math.abs(r.del/r.cmd-1)<=.05).length/Math.max(1,rr.length);
+  o.dErr=100*mean(rr.map(r=>Math.abs(r.del/r.cmd-1)));
+  o.dEff=100*rr.reduce((s2,r)=>s2+r.del,0)/Math.max(1e-6,rr.reduce((s2,r)=>s2+r.cmd,0));
+  o.occE=occE;o.occD=occD;o.occU=occU;o.lost=lostU;o.nDose=rr.length;
+  if(arm==='pen'){
+    const pairs=[];for(let i=0;i<cg.length;i++)if(cg[i]!=null)pairs.push([cg[i],i*5]);
+    o.mard=100*mean(pairs.map(([c,t])=>Math.abs(c-Gm1[t])/Gm1[t]));
+    o.p1515=100*mean(pairs.map(([c,t])=>{const g=Gm1[t];return (g<100?Math.abs(c-g)<=15:Math.abs(c-g)/g<=.15)?1:0;}));
+    let best=0,bm=1e9;for(let sft=0;sft<=15;sft++){const m=mean(pairs.filter(([,t])=>t>=sft).map(([c,t])=>Math.abs(c-Gm1[t-sft])));if(m<bm){bm=m;best=sft;}}o.lag=best;
+    o.usable=100*cg.slice(6).filter(v=>v!=null).length/Math.max(1,cg.slice(6).length);
+    o.peakInt=mean(peaks.length?[Math.max(...peaks),mean(peaks)]:[0]);o.peakIntMean=mean(peaks);
+    o.bias=mean(pairs.map(([c,t])=>c-Gm1[t]));
+  }
+  return o;
+}
+function runArm(arm,cfg){const rs=[];for(let i=0;i<cfg.n;i++)rs.push(runPatient(arm,cfg,cfg.seed*1000+i));
+  const keys=Object.keys(rs[0]);const a={};keys.forEach(k=>{a[k]=mean(rs.map(r=>r[k]));a[k+'_sd']=sd(rs.map(r=>r[k]));});
+  a.occE=rs.reduce((s,r)=>s+r.occE,0);a.occD=rs.reduce((s,r)=>s+r.occD,0);a.occU=rs.reduce((s,r)=>s+r.occU,0);a.lost=rs.reduce((s,r)=>s+r.lost,0);a.nDose=rs.reduce((s,r)=>s+r.nDose,0);return a;}
+const TG=[
+ ['Time in range 70–180 (%)','tir',v=>v>=70,'≥ 70','{v}',1],
+ ['Time below 70 (%)','tbr',v=>v<=4,'≤ 4','{v}',1],
+ ['Time above 180 (%)','tar',v=>v<=25,'≤ 25','{v}',1],
+ ['Mean glucose (mg/dL)','mean',null,'—','{v}',0],
+ ['GMI (%)','gmi',v=>v<7.0,'< 7.0','{v}',2],
+ ['Hypo episodes ≥15 min / wk','hypoEp',null,'—','{v}',1],
+ ['Doses within ±5% of commanded (%)','dAcc',v=>v>=95,'≥ 95','{v}',1],
+ ['Mean dose error (%)','dErr',v=>v<=3,'≤ 3','{v}',1],
+ ['Insulin delivered / commanded (%)','dEff',v=>v>=97,'≥ 97','{v}',1],
+ ['CGM MARD (%)','mard',v=>v<10,'< 10 (design ref)','{v}',1],
+ ['CGM within 15 mg/dL or 15% (%)','p1515',v=>v>=85,'≥ 85','{v}',1],
+ ['Effective sensor lag (min)','lag',v=>v<=10,'≤ 10','{v}',1],
+ ['Usable CGM readings (%)','usable',v=>v>=95,'≥ 95','{v}',1],
+ ['Bolus interference, peak (mg/dL)','peakInt',v=>v<=10,'≤ 10','{v}',1],
+ ['Occlusions detected (%)','occRate',v=>isNaN(v)||v>=95,'≥ 95','{v}',1]
+];
+function cfgFromUI(){return{n:+$('bN').value,days:+$('bD').value,seed:+$('bS').value||1,occ:+$('bOcc').value/100,detect:.98,dsig:+$('bDs').value/100,noise:+$('bNz').value,offset:sim.offset,filter:sim.filter};}
+let lastReport=null;
+function runBench(){
+  const cfg=cfgFromUI();const t0=performance.now();
+  const A=runArm('mdi',cfg),B=runArm('pen',cfg);B.occRate=B.occE?100*B.occD/B.occE:NaN;A.occRate=NaN;
+  lastReport={cfg,A,B,ms:Math.round(performance.now()-t0)};renderBench();
+}
+const f=(v,d)=>isNaN(v)?'—':v.toFixed(d);
+function renderBench(){
+  const {cfg,A,B}=lastReport;let pass=0,tot=0,fails=[];
+  const rows=TG.map(([name,k,ok,tg,,d])=>{const va=A[k],vb=B[k];let st='';
+    if(ok&&!isNaN(vb)){tot++;if(ok(vb)){pass++;st='<span class="pf ok">PASS</span>';}else{st='<span class="pf no">FAIL</span>';fails.push(name);}}
+    const sdv=B[k+'_sd'];
+    return `<tr><td>${name}</td><td>${f(va,d)}</td><td><b>${f(vb,d)}</b>${!isNaN(sdv)&&k!=='occRate'?`<small> ±${f(sdv,d)}</small>`:''}</td><td class="tg">${tg}</td><td>${st}</td></tr>`;}).join('');
+  const verdict=pass===tot?`<div class="vd ok">All ${tot} design targets met in the simulation — a reason to build and test, not evidence.</div>`:`<div class="vd ${pass/tot>=.75?'warn':'no'}">${pass}/${tot} targets met. Needs work: ${fails.join('; ')}.</div>`;
+  const dTir=B.tir-A.tir;
+  $('benchOut').innerHTML=`<div class="bsum">${cfg.n} virtual patients × ${cfg.days} days · offset ${cfg.offset.toFixed(1)} mm · filter ${cfg.filter?'on':'off'} · ${lastReport.ms} ms</div>
+  <div class="bhead"><span class="bk">Time in range</span> ${f(A.tir,1)}% → <b>${f(B.tir,1)}%</b> <span class="${dTir>=0?'up':'dn'}">(${dTir>=0?'+':''}${f(dTir,1)} pts)</span></div>
+  <table class="btab"><tr><th>Metric</th><th>Standard pen</th><th>Smart pen + hub</th><th>Target</th><th></th></tr>${rows}</table>
+  <div class="bsum">Occlusions: ${B.occE} injected, ${B.occD} detected by motor current, ${B.occU} missed (${f(B.lost,1)} U lost). ${B.nDose} smart-pen doses.</div>${verdict}
+  <div class="bsum">⚠ Virtual model on assumed parameters (patient variability, sensor noise, delivery error). It shows design sensitivities and go/no-go trends — it is not clinical evidence.</div>`;
+  $('benchDl').style.display='';
+}
+function sweep(){
+  const base=cfgFromUI();base.n=Math.min(base.n,12);base.days=Math.min(base.days,4);const xs=[1,2,3,4,5,6,7,8];const on=[],off=[],pk=[];
+  xs.forEach(o=>{const c1=Object.assign({},base,{offset:o,filter:true}),c0=Object.assign({},base,{offset:o,filter:false});
+    const r1=runArm('pen',c1),r0=runArm('pen',c0);on.push(r1.mard);off.push(r0.mard);pk.push(r0.peakInt);});
+  drawSweep(xs,on,off,base.offset);
+}
+function drawSweep(xs,on,off,cur){
+  const c=$('sweepCv'),dpr=Math.min(devicePixelRatio,2),w=c.clientWidth,h=c.clientHeight;c.width=w*dpr;c.height=h*dpr;c.style.display='block';
+  const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,h);
+  const pl=34,pr=8,pt=14,pb=24,maxY=Math.max(14,Math.ceil(Math.max(...on,...off)+1));const X=v=>pl+(v-1)/7*(w-pl-pr),Y=v=>h-pb-v/maxY*(h-pt-pb);
+  x.font='10px -apple-system,sans-serif';x.fillStyle='#5B6B75';x.strokeStyle='#DCE5EA';x.textAlign='right';
+  for(let v=0;v<=maxY;v+=Math.ceil(maxY/4)){x.beginPath();x.moveTo(pl,Y(v));x.lineTo(w-pr,Y(v));x.stroke();x.fillText(v+'%',pl-4,Y(v)+3);}
+  x.textAlign='center';xs.forEach(v=>x.fillText(v+'',X(v),h-8));x.fillText('sensor–outlet offset (mm)',w/2,h-0);
+  x.strokeStyle='#1E8C5A';x.setLineDash([4,3]);x.beginPath();x.moveTo(pl,Y(10));x.lineTo(w-pr,Y(10));x.stroke();x.setLineDash([]);x.fillStyle='#1E8C5A';x.textAlign='left';x.fillText('MARD 10% target',pl+4,Y(10)-4);
+  const line=(a,col)=>{x.strokeStyle=col;x.lineWidth=2;x.beginPath();a.forEach((v,i)=>i?x.lineTo(X(xs[i]),Y(v)):x.moveTo(X(xs[i]),Y(v)));x.stroke();x.fillStyle=col;a.forEach((v,i)=>{x.beginPath();x.arc(X(xs[i]),Y(v),3,0,7);x.fill();});};
+  line(off,'#B23A48');line(on,'#2F6DB5');
+  x.strokeStyle='#A8641F';x.lineWidth=1;x.beginPath();x.moveTo(X(cur),pt);x.lineTo(X(cur),h-pb);x.stroke();
+  $('sweepLg').style.display='flex';
+}
+window.runBench=runBench;window.__bench={runPatient,cfgFromUI};
+$('bRunB').onclick=runBench;$('bSweep').onclick=()=>{$('bSweep').textContent='Sweeping…';setTimeout(()=>{sweep();$('bSweep').textContent='Sweep offset';},30);};
+$('benchDl').onclick=()=>{if(!lastReport)return;const {cfg,A,B}=lastReport;let csv='metric,standard_pen,smart_pen_hub,target\n';TG.forEach(([n,k,,tg])=>{csv+=`"${n}",${isNaN(A[k])?'':A[k].toFixed(3)},${isNaN(B[k])?'':B[k].toFixed(3)},"${tg}"\n`;});
+  csv+=`\n# patients=${cfg.n} days=${cfg.days} seed=${cfg.seed} offset_mm=${cfg.offset} filter=${cfg.filter} occlusion_rate=${cfg.occ} dose_sigma=${cfg.dsig} noise_x=${cfg.noise}\n`;
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='pen_hub_virtual_validation.csv';a.click();};
+/* ---- replay a virtual day in the 3D simulator ---- */
+let demo=null;
+window.demoStep=function(){if(!demo)return;const S=sim;
+  if(S.t>=1440){demo=null;S.liveSpeed=1;const H=S.hist.filter(h=>h.G!=null);const tir=100*H.filter(h=>h.G>=70&&h.G<=180).length/H.length;log('▶ Day complete — true-glucose time in range '+tir.toFixed(0)+'%');$('bDemo').textContent='▶ Replay a day in 3D';$('demoSt').textContent='Day complete · TIR '+tir.toFixed(0)+'%';return;}
+  $('demoSt').textContent='Replay day: '+fmtT(S.t);
+  const ev=demo.find(e=>!e.done&&S.t>=e.t);
+  if(ev&&!S.busy&&!S.injPhase){ev.done=true;
+    if(ev.c){S.Cg+=ev.c;S.carbs=ev.c;log('🍽 Meal '+ev.c+' g (replay)');}
+    refreshAdvice();if(S.advice>0){setDose(S.advice);later(.8,()=>inject());}}
+  else if(!ev&&!S.busy&&!S.injPhase&&S.cgmOK&&S.cgm>200&&S.t-(S.lastDoseT||-999)>180){S.lastDoseT=S.t;S.carbs=0;refreshAdvice();if(S.advice>=1){log('Auto-correction dose');setDose(S.advice);later(.8,()=>inject());}}
+};
+$('bDemo').onclick=()=>{if(demo){demo=null;sim.liveSpeed=1;$('bDemo').textContent='▶ Replay a day in 3D';$('demoSt').textContent='';return;}
+  resetSim(true);sim.reservoir=250;sim.live=true;sim.liveSpeed=8;$('bLive').textContent='⏸ Live clock';
+  demo=[{t:30,c:50},{t:330,c:60},{t:720,c:70}].map(e=>Object.assign({},e));$('bDemo').textContent='■ Stop replay';updateUI();};
+})();
+
+</script>
+<script>
+/* ===================== Hardware specs + BOM ===================== */
+(function(){
+const SPECS=[
+ ['System','Architecture','Reusable smart pen (motor, electronics, display, strip meter) + disposable worn hub (CGM + insulin cannula, BLE) + single-use dock needle','Assumption'],
+ ['System','Reusable pen life','1–2+ years (rechargeable)','Design ref'],
+ ['System','Hub wear time','3.5–7 days; modelled at 7 d','Design ref (pod life)'],
+ ['System','Operating modes','Open-loop advisor (Gen 1); data ready for closed-loop unlock','Design ref'],
+ ['Mechanical','Pen envelope','Ø17 mm × ≤150 mm (model ≈ 140 mm incl. holder), ≤ 45 g with cartridge','Assumption'],
+ ['Mechanical','Hub envelope','Ø17 mm × ≤8 mm body on Ø30 mm adhesive, ≤ 3.5 g','Assumption'],
+ ['Mechanical','Cartridge','3 mL U-100 glass (300 U), within the design-reference range 200–300 U','Design ref + ISO 11608-3'],
+ ['Mechanical','Housing materials','PC/ABS body, PC holder, POM gears/lead-screw, SS303 rod; ISO 10993 skin-contact for hub parts','Assumption'],
+ ['Mechanical','Dock interface','Dock needle pierces hub septum; ≥ 30 pierce cycles per septum','Assumption'],
+ ['Delivery','Dose range / step','0.5–20 U per injection, 0.5 U steps (encoder detent)','Assumption'],
+ ['Delivery','Dose accuracy','≥ 95 % of doses within ±5 % (virtual model: 98 %); verify to ISO 11608-1 at min/mid/max dose','Virtual model + Standard'],
+ ['Delivery','Delivery rate','1.2 U/s; 6 s hold after dose','Assumption'],
+ ['Delivery','Prime','2 U prime on every new dock needle (enforced)','Assumption'],
+ ['Delivery','Occlusion detection','Motor-current rise; detect ≥ 95 % of events within 0.7 U (virtual model: 100 %); per IEC 60601-2-24 approach','Design ref + Virtual model'],
+ ['Delivery','Drive','Ø8 mm planetary gear-motor, 100:1, 0.8 mm lead-screw → 0.5 U ≈ 0.07 mm stopper travel','Assumption'],
+ ['Sensing (CGM)','Measurand / range','Interstitial glucose 40–400 mg/dL (2.2–22.2 mmol/L), sensor current ≈ 5–50 nA','Assumption'],
+ ['Sensing (CGM)','Sample interval','5 min, BLE push to pen and phone','Design ref'],
+ ['Sensing (CGM)','Accuracy target','MARD < 10 % (virtual model 6.4 %); ≥ 85 % within 15 mg/dL or 15 %','Design ref + Virtual model'],
+ ['Sensing (CGM)','Lag / warm-up','Effective lag ≤ 10 min (virtual model 4.5 min); warm-up 30 min','Virtual model + Assumption'],
+ ['Sensing (CGM)','Sensor–outlet offset','≥ 4–6 mm plus bolus-aware filter; interference peak ≤ 10 mg/dL (virtual model 3.8)','Design ref + Virtual model'],
+ ['Sensing (CGM)','Electrodes','3-electrode: Au working (GOx), Ag/AgCl reference, Pt counter; permselective membrane blocks m-cresol / phenol','Design ref'],
+ ['Sensing (CGM)','Analogue front-end','Potentiostat 0.6 V bias, ±100 nA range, ≤ 0.1 nA RMS noise, 16-bit','Assumption'],
+ ['Sensing (strip)','Blood glucose meter','20–600 mg/dL, 0.5 µL, 5 s; ISO 15197:2013 (95 % within ±15 mg/dL / ±15 %)','Standard'],
+ ['Electronics','MCU / radio','Cortex-M4F BLE 5.x SoC, 64 MHz, ≥ 512 KB flash, secure bootloader, signed OTA','Assumption'],
+ ['Electronics','Display / UI','0.96″ OLED 128×64, dial, inject button, status LED + haptic/phone alerts','Assumption'],
+ ['Electronics','Dose verification','12-pole ring magnet + Hall sensor, independent of motor count','Assumption'],
+ ['Power','Pen battery','Li-ion 250 mAh, USB-C or contact charge, ≥ 4 weeks typical (see Power tab)','Assumption'],
+ ['Power','Hub battery','CR1025-class coin cell ~30 mAh; > 7 d with margin (see Power tab)','Assumption'],
+ ['Environment','Ingress','Pen IP22 (home use); hub IP28 (shower/swim 1 m, 30 min)','Assumption'],
+ ['Environment','Temperature','Operate 5–40 °C; insulin path ≤ 40 °C; storage −20 to 50 °C','Assumption'],
+ ['Sterility','Hub / dock needle','Sterile (SAL 10⁻⁶), low-temp e-beam or EtO validated early (ISO 11137 / 11135) to protect enzyme','Design ref'],
+ ['Safety','Low-glucose guard','Dose blocked below 70 mg/dL unless overridden; rescue-carb prompt','Assumption'],
+ ['Safety','Dose limits','Max 20 U per dose, prime enforced, IOB-aware advisor, signal-loss fallback to strip','Assumption'],
+ ['Standards to plan for','Electrical / EMC / usability','IEC 60601-1, 60601-1-2, 60601-1-11 (home), 62366-1, 62133-2 (battery), 62304 (software, likely class C)','Standard'],
+ ['Standards to plan for','Device-specific','ISO 11608-1/-2/-3 (pens, needles, cartridges), IEC 60601-2-24, ISO 15197 (BGM), FDA iCGM special controls (21 CFR 862.1355) if marketed as CGM','Standard'],
+ ['Standards to plan for','Quality / risk','ISO 13485, ISO 14971, ISO 10993 (hub skin contact ≥ 7 d), BLE RF (FCC Part 15 / EU RED)','Standard']
+];
+const OPEN_RISKS=[
+ 'Combination status: pen delivers a drug and is a glucose sensor — confirm FDA/TGA pathway (our design reference: a user-supplied cartridge may avoid drug–device combination review — to be confirmed).',
+ 'Insulin preservative (m-cresol/phenol) interference through the permselective membrane — validate on bench and porcine model before freezing the offset.',
+ '7-day sensor stability (enzyme, sensitivity drift ≈ 0.4 %/day assumed) and adhesive wear.',
+ 'Septum durability and dead-volume/priming accuracy at the dock interface.',
+ 'Occlusion detection by motor current only — confirm with pressure-rig tests; add a pressure sensor if needed.',
+ 'Sterilisation effect on GOx layer and membrane (deck risk #3).'];
+/* BOM: ref, part id, assembly, item, spec, qty, unit cost USD @~100k units/yr (estimate) */
+const BOM=[
+ ['P01','body','PEN','Pen housing (body shell)','PC/ABS 2-shot, Ø17 × 66 mm',1,0.70],
+ ['P02','holder','PEN','Cartridge holder','Clear PC, ISO 11608-3 thread, dock-nose seal',1,0.45],
+ ['P03','dial','PEN','Dose dial knob','POM + TPE grip, 12 mm bearing',1,0.40],
+ ['P04','injbtn','PEN','Inject button + dome switch','2-stage tactile, 10 k cycles',1,0.35],
+ ['P05','motor','PEN','Micro gear-motor','Ø8 mm DC planetary 100:1, 3 V, stall ≤ 150 mA',1,3.20],
+ ['P06','gearbox','PEN','Drive nut + gear stage','POM/steel anti-rotation nut',1,0.60],
+ ['P07','rod','PEN','Lead-screw piston rod','SS303 / PA66, 0.8 mm pitch, 30 mm',1,0.80],
+ ['P08','encoder','PEN','Dose encoder (ring magnet + Hall IC)','12-pole magnet, 0.5 U detent',1,0.65],
+ ['P09','mcu','PEN','BLE SoC (MCU)','Cortex-M4F, 64 MHz, 512 KB / 64 KB',1,2.20],
+ ['P10','ble','PEN','Antenna, matching, RF shield','Chip antenna / PCB meander',1,0.60],
+ ['P11','afe','PEN','Potentiostat AFE (strip reader)','3-electrode, nA range, low noise',1,1.60],
+ ['P12','mcu','PEN','Motor driver + current sense','H-bridge, 0.5 A, shunt amp',1,0.45],
+ ['P13','pcb','PEN','Rigid-flex PCB','4-layer, 40 × 10 mm, conformal coat',1,2.10],
+ ['P14','pcb','PEN','Passives, crystal, ESD, connectors','',1,0.70],
+ ['P15','display','PEN','OLED display','0.96″ 128×64, I²C',1,1.10],
+ ['P16','battery','PEN','Li-ion cell + protection','250 mAh 10440-class, PCM',1,1.50],
+ ['P17','battery','PEN','Charger / fuel-gauge IC + USB-C pads','',1,0.80],
+ ['P18','port','PEN','Strip port module','3 gold contacts, ejector, sealed slot',1,0.95],
+ ['P19','body','PEN','Seals, O-rings, ESD foam','Silicone / EPDM',1,0.25],
+ ['P20',null,'PEN','Assembly, calibration, functional test','~6 min labour + fixtures',1,4.50],
+ ['P21',null,'PEN','Packaging, IFU, charge cable','',1,1.20],
+ ['H01','hub','HUB','Hub housing (2-part)','PP, ultrasonic weld, Ø17 mm',1,0.20],
+ ['H02','hub','HUB','Adhesive patch','Non-woven + acrylic, Ø30 mm, 7 d wear',1,0.18],
+ ['H03','hub','HUB','Septum','Silicone / bromobutyl, ≥ 30 pierces',1,0.06],
+ ['H04','whcan','HUB','Insulin cannula + introducer','28G PTFE, 6.5 mm',1,0.25],
+ ['H05','nelec','HUB','Sensor filament (Au WE / Ag-AgCl RE / Pt CE) + GOx','Ø0.35–0.7 mm, ≥ 6 mm',1,0.95],
+ ['H06','nmem','HUB','Permselective membrane coating','Dip-coat, blocks m-cresol / phenol',1,0.20],
+ ['H07','whchip','HUB','Hub ASIC (potentiostat + BLE)','Single die, ≤ 20 µA average',1,1.00],
+ ['H08','whchip','HUB','Mini flex PCB','2-layer polyimide',1,0.20],
+ ['H09','whbat','HUB','Coin cell','CR1025-class, ~30 mAh',1,0.20],
+ ['H10','whchip','HUB','Passives, crystal','',1,0.15],
+ ['H11','hub','HUB','Applicator / inserter','Spring, needle-shielded',1,0.35],
+ ['H12','hub','HUB','Sterile barrier pack + e-beam / EtO','ISO 11137 / 11135',1,0.35],
+ ['H13',null,'HUB','Assembly + inline test','',1,0.80],
+ ['N01','needle','NDL','Dock needle (per dose)','Moulded hub, 31G × 6 mm, shield cap',1,0.07],
+ ['C01','strip','CON','Glucose test strip (each)','Electrochemical 0.5 µL, 5 s',1,0.15],
+ ['C02','cartridge','CON','Insulin cartridge 3 mL (glass + stopper)','U-100, ISO 11608-3, user-supplied insulin',1,0.30]
+];
+const ASM={PEN:'Reusable smart pen',HUB:'Disposable wear hub (CGM + cannula)',NDL:'Dock needle (consumable)',CON:'Other consumables'};
+const f2=v=>'$'+v.toFixed(2);
+const tot=a=>BOM.filter(b=>b[2]===a).reduce((s,b)=>s+b[5]*b[6],0);
+const cin={wear:7,doses:4,strips:1,life:2,ud:40};
+function costInputs(){if($('hwWear')){cin.wear=+$('hwWear').value;cin.doses=+$('hwDoses').value||1;cin.strips=+$('hwStrips').value||0;cin.life=+$('hwLife').value||1;cin.ud=+$('hwUD').value||10;}return cin;}
+function annual(){const c=costInputs();const hubs=365/c.wear,pen=tot('PEN')/c.life,hub=hubs*tot('HUB'),ndl=c.doses*365*tot('NDL'),st=c.strips*365*BOM.find(b=>b[0]==='C01')[6],cart=(c.ud*365/300)*BOM.find(b=>b[0]==='C02')[6];
+  return{c,hubs,pen,hub,ndl,st,cart,total:pen+hub+ndl+st+cart};}
+function power(){
+  const PEN=[['Sleep (MCU RTC + RAM)',0.008,24,'0.008 mA × 24 h'],['BLE scan for hub packet (2 s / 5 min)',8,24*3600/300*2/3600,'8 mA × 2 s × 288/day'],
+    ['OLED on (25 s × 10 uses/day)',12,250/3600,'12 mA'],['Motor delivery + prime (6.7 s × 4 doses)',120,26.8/3600,'120 mA'],['Strip read (8 s × 1/day)',3,8/3600,'3 mA'],['BLE phone sync (30 s × 6/day)',5,180/3600,'5 mA']];
+  const HUB=[['Sleep (ASIC)',0.002,24,'2 µA'],['Sensor bias + read (6 s / 5 min)',0.4,24*3600/300*6/3600,'0.4 mA × 6 s × 288/day'],['BLE packet / connection events',0.01,24,'≈10 µA average']];
+  const calc=a=>a.map(r=>({n:r[0],i:r[1],h:r[2],mah:r[1]*r[2],note:r[3]}));
+  const p=calc(PEN),h=calc(HUB);return{p,h,pd:p.reduce((s,r)=>s+r.mah,0),hd:h.reduce((s,r)=>s+r.mah,0)};}
+let tab='specs';
+function render(){
+  const el=$('hwOut');let h='';
+  if(tab==='specs'){
+    let cat='';h+='<table class="btab"><tr><th>Parameter</th><th>Specification</th><th>Basis</th></tr>';
+    SPECS.forEach(r=>{if(r[0]!==cat){cat=r[0];h+=`<tr><td colspan="3" class="hcat">${cat}</td></tr>`;}
+      const b=r[3];h+=`<tr><td>${r[1]}</td><td>${r[2]}</td><td><span class="bs ${/Design ref/.test(b)?'d':/Virtual/.test(b)?'b':/Standard/.test(b)?'s':'a'}">${b}</span></td></tr>`;});
+    h+='</table><div class="k">Open design risks to close before design freeze</div><ul class="rk">'+OPEN_RISKS.map(x=>`<li>${x}</li>`).join('')+'</ul>';
+  }else if(tab==='power'){
+    const P=power(),penDays=250*.8/P.pd,hubDays=30*.8/P.hd;
+    const tb=(rows,title,day)=>`<div class="k">${title}</div><table class="btab"><tr><th>Mode</th><th>Current</th><th>mAh / day</th></tr>${rows.map(r=>`<tr><td>${r.n}<br><small>${r.note}</small></td><td>${r.i<0.1?(r.i*1000).toFixed(0)+' µA':r.i+' mA'}</td><td>${r.mah.toFixed(3)}</td></tr>`).join('')}<tr><td><b>Total</b></td><td></td><td><b>${day.toFixed(2)}</b></td></tr></table>`;
+    h+=tb(P.p,'Smart pen (250 mAh, 80 % usable)',P.pd)+`<div class="vd ${penDays>=28?'ok':'warn'}">Pen battery life ≈ ${penDays.toFixed(0)} days per charge (target ≥ 28)</div>`;
+    h+=tb(P.h,'Wear hub (30 mAh coin cell, 80 % usable)',P.hd)+`<div class="vd ${hubDays>=10?'ok':'warn'}">Hub battery life ≈ ${hubDays.toFixed(0)} days (wear time 7 d → margin ${(hubDays/7).toFixed(1)}×)</div>`;
+    h+='<div class="bsum">Currents and duty cycles are design assumptions for sizing; replace with measured values from the first prototype.</div>';
+  }else if(tab==='bom'){
+    h+='<table class="btab"><tr><th>Ref</th><th>Item / spec</th><th>Qty</th><th>Unit</th><th>Ext</th></tr>';
+    Object.keys(ASM).forEach(a=>{const rows=BOM.filter(b=>b[2]===a);h+=`<tr><td colspan="5" class="hcat">${ASM[a]} — <b>${f2(tot(a))}</b></td></tr>`;
+      rows.forEach(b=>{h+=`<tr class="${b[1]?'lnk':''}" ${b[1]?`data-id="${b[1]}"`:''}><td>${b[0]}</td><td>${b[3]}<br><small>${b[4]}</small></td><td>${b[5]}</td><td>${f2(b[6])}</td><td>${f2(b[5]*b[6])}</td></tr>`;});});
+    h+='</table><div class="bsum">Click a row to highlight the part in the 3D view. Unit costs are budgetary estimates at ~100 k units/yr — get quotes before relying on them.</div>';
+  }else{
+    const a=annual(),c=a.c;
+    h+=`<div class="bgrid"><label>Hub wear (days) <select id="hwWear">${[3.5,5,7,10].map(v=>`<option ${v===c.wear?'selected':''}>${v}</option>`).join('')}</select></label>
+      <label>Doses / day <input id="hwDoses" type="number" value="${c.doses}" min="1" max="10"></label>
+      <label>Strips / day <input id="hwStrips" type="number" value="${c.strips}" min="0" max="6" step="0.5"></label>
+      <label>Pen life (yr) <input id="hwLife" type="number" value="${c.life}" min="1" max="4"></label>
+      <label>Insulin U / day <input id="hwUD" type="number" value="${c.ud}" min="10" max="150"></label></div>
+    <table class="btab" style="margin-top:8px"><tr><th>Cost per patient-year</th><th>Qty / yr</th><th>USD</th></tr>
+    <tr><td>Reusable pen (amortised)</td><td>1 / ${c.life} yr</td><td>${f2(a.pen)}</td></tr>
+    <tr><td>Wear hubs</td><td>${a.hubs.toFixed(0)}</td><td>${f2(a.hub)}</td></tr>
+    <tr><td>Dock needles</td><td>${Math.round(c.doses*365)}</td><td>${f2(a.ndl)}</td></tr>
+    <tr><td>Test strips</td><td>${Math.round(c.strips*365)}</td><td>${f2(a.st)}</td></tr>
+    <tr><td>Insulin cartridges</td><td>${(c.ud*365/300).toFixed(0)}</td><td>${f2(a.cart)}</td></tr>
+    <tr><td><b>Total device COGS / patient-year</b></td><td></td><td><b>${f2(a.total)}</b></td></tr></table>
+    <div class="vd ${a.total<=452?'ok':'warn'}">Design-reference COGS target: $452 / patient-yr (two-device benchmark ≈ $1,600 / yr, unverified figure from our design reference). This design: ${f2(a.total)} — ${Math.round(100*(1-a.total/1600))}% below the benchmark, ${a.total<=452?'inside':'over'} the target by ${f2(Math.abs(a.total-452))}.</div>
+    <div class="bsum">Hub unit ${f2(tot('HUB'))} vs design-reference pod target $4.20 (hub carries a sensor and ASIC, so expect it above a drug-only pod). Costs are budgetary estimates at ~100 k units/yr, excluding insulin drug cost, retail margin and regulatory spend.</div>`;
+  }
+  el.innerHTML=h;
+  if(tab==='cost')['hwWear','hwDoses','hwStrips','hwLife','hwUD'].forEach(id=>$(id).addEventListener('input',render));
+  el.querySelectorAll('tr.lnk').forEach(r=>r.addEventListener('click',()=>{select(r.dataset.id,true);$('gl').scrollIntoView({block:'start'});}));
+  document.querySelectorAll('#hwSeg button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+}
+$('hwSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;tab=b.dataset.t;render();});
+$('hwCsv').onclick=()=>{const q=s=>'"'+String(s).replace(/"/g,'""')+'"';let csv='ref,part_id,assembly,item,spec,qty,unit_cost_usd,ext_cost_usd\n';
+  BOM.forEach(b=>{csv+=[b[0],b[1]||'',ASM[b[2]],q(b[3]),q(b[4]),b[5],b[6].toFixed(2),(b[5]*b[6]).toFixed(2)].join(',')+'\n';});
+  csv+='\nspec_category,parameter,specification,basis\n';SPECS.forEach(r=>{csv+=[q(r[0]),q(r[1]),q(r[2]),q(r[3])].join(',')+'\n';});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='smart_pen_hub_specs_bom.csv';a.click();};
+render();
+window.__hw={BOM,SPECS,tot,annual,power};
+})();
+
+</script>
+</body>
+</html>

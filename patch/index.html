@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CGM Insulin Patch</title>
+<meta name="description" content="Interactive 3D concept: a wearable patch with a continuous glucose sensor and an insulin cannula at two separate sites, applied with one press. SHARE 2026 concept; design targets only, no bench or clinical data.">
+<style>
+:root{
+  --navy:#102F46; --teal:#087F80; --warm:#A8641F; --deep:#0B5E6E;
+  --c-version:#102F46; --c-use:#087F80; --c-out:#A8641F; --c-safe:#B23A48; --c-access:#6A5BA3;
+  --bg:#F7F9FA; --panel:#FFFFFF; --text:#1F2D38; --muted:#5B6B75; --line:#CFDADF; --soft:#E8F1F2; --warmsoft:#F6EEE5;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0C1B26; --panel:#12283A; --text:#E7EEF2; --muted:#A9C3CC; --line:#24465C; --soft:#163447; --warmsoft:#3A2A1A; } }
+:root[data-theme="dark"]{ --bg:#0C1B26; --panel:#12283A; --text:#E7EEF2; --muted:#A9C3CC; --line:#24465C; --soft:#163447; --warmsoft:#3A2A1A; }
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%}
+header{padding:14px 20px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:var(--panel)}
+header .t{font-weight:700;font-size:18px}
+header .s{font-size:13px;color:var(--muted)}
+.badge{display:inline-block;font-size:12px;font-weight:700;color:var(--warm);background:var(--warmsoft);border:1px solid var(--warm);border-radius:999px;padding:5px 12px}
+main{display:grid;grid-template-columns:minmax(0,1fr) 380px;min-height:calc(100vh - 62px)}
+#stage{position:relative;min-height:560px;overflow:hidden;background:radial-gradient(ellipse at 50% 35%,#ffffff 0%,#E8F1F2 70%,#D8E6E9 100%)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) #stage{background:radial-gradient(ellipse at 50% 35%,#1B3A50 0%,#0F2231 75%)} }
+:root[data-theme="dark"] #stage{background:radial-gradient(ellipse at 50% 35%,#1B3A50 0%,#0F2231 75%)}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#labels{position:absolute;inset:0;pointer-events:none}
+.mk{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;width:26px;height:26px;border-radius:50%;border:2px solid #fff;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.mk:hover,.mk.on{transform:translate(-50%,-50%) scale(1.25)}
+.mk span{position:absolute;left:30px;white-space:nowrap;font-size:12px;font-weight:700;color:#102F46;background:rgba(255,255,255,.93);padding:2px 7px;border-radius:4px;display:none}
+.mk.on span,.show-names .mk span{display:block}
+#toolbar{position:absolute;left:12px;top:12px;display:flex;flex-wrap:wrap;gap:8px;max-width:calc(100% - 24px);z-index:2}
+button{font:inherit;font-size:14px;font-weight:700;border-radius:8px;border:1px solid var(--teal);background:var(--panel);color:var(--teal);padding:9px 13px;cursor:pointer;min-height:40px}
+button.pri{background:var(--teal);color:#fff}
+button.alt{border-color:var(--warm);color:var(--warm)}
+button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+button:disabled{opacity:.45;cursor:default}
+#status{position:absolute;right:12px;bottom:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.4;min-width:190px;z-index:2}
+#status b{display:block;font-size:12px;color:var(--muted);letter-spacing:.3px}
+#status .v{font-size:18px;font-weight:700}
+#legend{position:absolute;left:12px;top:112px;display:none;flex-wrap:wrap;gap:6px 12px;background:rgba(255,255,255,.93);border-radius:8px;padding:8px 10px;font-size:12px;color:#1F2D38;max-width:calc(100% - 24px)}
+#legend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+#card{position:absolute;left:12px;bottom:14px;width:min(620px,calc(100% - 250px));background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:none;box-shadow:0 4px 18px rgba(0,0,0,.12);z-index:2}
+#card .step{font-size:12px;font-weight:700;color:var(--teal);letter-spacing:.4px}
+#card h3{margin:4px 0}
+#card p{margin:0 0 10px;font-size:14px;line-height:1.45}
+#card .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+aside{background:var(--panel);border-left:1px solid var(--line);padding:18px 18px 24px;overflow:auto}
+aside h2{font-size:20px;margin:0 0 4px}
+aside .pillar{display:inline-block;font-size:12px;font-weight:700;color:#fff;border-radius:999px;padding:4px 10px;margin:6px 0 10px}
+aside h4{font-size:13px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin:16px 0 4px}
+aside p{font-size:15px;line-height:1.45;margin:0}
+.hint{font-size:13px;color:var(--muted);margin-top:16px;line-height:1.4}
+section.more{max-width:1180px;margin:0 auto;padding:28px 20px 40px}
+section.more h2{font-size:24px;margin:8px 0 6px}
+.lead{color:var(--muted);margin:0 0 16px;font-size:15px;line-height:1.45}
+.tag{font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--teal)}
+.flow{display:flex;flex-wrap:wrap;gap:8px}
+.flow div{flex:1 1 150px;background:var(--soft);border-radius:8px;padding:12px;font-size:14px;line-height:1.35}
+.flow b{display:block;color:var(--teal);margin-bottom:3px}
+table{border-collapse:collapse;width:100%;font-size:14px;background:var(--panel)}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--navy);color:#fff}
+.wrap{overflow-x:auto}
+footer{border-top:1px solid var(--line);padding:18px 20px;font-size:13px;color:var(--muted);text-align:center;line-height:1.5}
+body.still header,body.still aside,body.still section.more,body.still footer,body.still #toolbar,body.still #status,body.still #card{display:none!important}
+body.still main{display:block}
+html.still,body.still{background:transparent}
+body.still #stage{height:100vh;background:transparent}
+body.nomarks #labels{display:none}
+body.dots .mk{width:34px;height:34px;font-size:18px;border-width:3px}
+body.dots .mk span{display:none!important}
+@media (max-width:900px){
+  main{grid-template-columns:1fr}
+  #stage{min-height:70vh}
+  aside{border-left:0;border-top:1px solid var(--line)}
+  button{font-size:13px;padding:8px 10px}
+  #status{top:auto;bottom:12px;right:12px;min-width:0}
+  #card{width:calc(100% - 24px);bottom:auto;top:150px}
+  #legend{top:150px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="t">Route 2 · CGM + insulin patch · Gen 1 · interactive concept</div><div class="s">SHARE 2026 · Janyavula &amp; Ramireddy · The Apollo University</div></div>
+  <span class="badge">OUR CONCEPT · DESIGN TARGETS ONLY · NO BENCH OR CLINICAL DATA</span>
+  <nav style="display:flex;gap:14px;font-size:14px;font-weight:700"><a style="color:#087F80" href="../">← Both approaches</a><a style="color:#087F80" href="../pen/">Route 1: pen-meter →</a></nav>
+</header>
+<main>
+  <div id="stage">
+    <div id="labels"></div>
+    <div id="toolbar">
+      <button id="bPress" class="pri">▶ One-press insertion</button>
+      <button id="bExplode" aria-pressed="false">Explode view</button>
+      <button id="bLens" aria-pressed="false">Surveillance lens</button>
+      <button id="bNames" aria-pressed="false">Show names</button>
+      <button id="bLoss" class="alt">Signal lost</button>
+      <button id="bSite" class="alt">Insulin-site failure</button>
+      <button id="bFill" class="alt">Under-filled pod</button>
+    </div>
+    <div id="status"><b>DEVICE STATUS (SIMULATED)</b><span class="v" id="sMain">Ready to apply</span><br><span id="sSub">Pod filled: 300 U · covers 3 days</span></div>
+    <div id="legend">
+      <span><i style="background:var(--c-version)"></i>1 Software version</span>
+      <span><i style="background:var(--c-use)"></i>2 Patient engagement</span>
+      <span><i style="background:var(--c-out)"></i>3 Clinical outcomes</span>
+      <span><i style="background:var(--c-safe)"></i>Safety</span>
+      <span><i style="background:var(--c-access)"></i>Access and usability</span>
+    </div>
+    <div id="card" role="dialog" aria-live="polite">
+      <div class="step" id="cStep"></div><h3 id="cTitle"></h3><p id="cText"></p>
+      <div class="row"><button id="cPrev">Back</button><button id="cNext" class="pri">Next</button><button id="cClose">Close</button></div>
+    </div>
+  </div>
+  <aside aria-live="polite">
+    <h2 id="iName">Tap any part of the patch</h2>
+    <span class="pillar" id="iPillar" style="background:var(--teal)">Drag to rotate · pinch or scroll to zoom</span>
+    <h4>What it does</h4><p id="iWhat">One wearable patch, applied with one press, that measures glucose continuously and delivers insulin through two separate sites 10–12 mm apart.</p>
+    <h4>Data it creates</h4><p id="iData">Glucose every 5 minutes, every insulin delivery, pod changes and signal gaps, each stamped with the firmware and app version.</p>
+    <h4>Link to our review</h4><p id="iLink">Our review found that software version, patient use and clinical outcomes are rarely linked for the same patients over time. This design creates that linked record from the first day of wear.</p>
+    <p class="hint">Design targets from the team's Gen 1 reference, not measured results. Thresholds are starting values for bench tuning. Simulated values only.</p>
+  </aside>
+</main>
+<section class="more">
+  <span class="tag">FROM REVIEW TO DESIGN</span>
+  <h2>How the patch follows our framework</h2>
+  <p class="lead">Our six-regulator review proposed following three things together after authorisation: software version, patient engagement and clinical outcomes. The patch is designed to record all three for the same person.</p>
+  <div class="flow">
+    <div><b>1 · Software version</b>Firmware and app version stamped on every glucose reading and every insulin delivery.</div>
+    <div><b>2 · Patient engagement</b>Wear time, pod changes, insulin delivered and signal gaps. A gap is flagged, not assumed to be non-use.</div>
+    <div><b>3 · Clinical outcomes</b>Continuous glucose every 5 minutes; HbA1c still from the laboratory.</div>
+    <div><b>Safety, built in</b>Needles retract and lock; staged fallback on signal loss; two-site cross-check.</div>
+  </div>
+  <h2 style="margin-top:28px">Safety rules (starting values)</h2>
+  <div class="wrap"><table>
+    <tr><th>Rule</th><th>Trigger</th><th>Action</th></tr>
+    <tr><td>Staged fallback, Stage A</td><td>Glucose signal lost</td><td>Basal at 50% for up to 2 h; ask for a fingerstick</td></tr>
+    <tr><td>Staged fallback, Stage B</td><td>More than 2 h without glucose data</td><td>Suspend basal; alarm: change pod or use backup pen</td></tr>
+    <tr><td>Insulin-site cross-check</td><td>Glucose high and rising for 60 min on the sensor site despite delivered insulin, no occlusion</td><td>"Insulin site suspect" alert; automatic increases capped</td></tr>
+    <tr><td>Fill check</td><td>Plunger position when the pod is attached</td><td>Reports units loaded and days covered; warns if under-filled</td></tr>
+    <tr><td>Occlusion</td><td>Line pressure ≥30 kPa</td><td>Halt delivery and alert</td></tr>
+  </table></div>
+  <h2 style="margin-top:28px">How we will test it</h2>
+  <div class="flow">
+    <div><b>Bench</b>Sensor drift vs spacing; inserter fire, retract and lock reliability; fill and delivery accuracy.</div>
+    <div><b>Sterilisation</b>Glucose-enzyme sensitivity after low-dose e-beam.</div>
+    <div><b>Animal model</b>3-day wear, sensor accuracy and interference at the chosen spacing.</div>
+    <div><b>Human feasibility</b>Open-loop, 3-day wear, sensor accuracy and insulin-site survival.</div>
+    <div><b>Post-market</b>Our linked surveillance framework from day one.</div>
+  </div>
+</section>
+<footer>Concept by Vinay Janyavula and Dr. Sriroop Reddy Ramireddy, The Apollo University · SHARE 2026, Monash University.<br>Illustrative 3D engineering model. Not a real, approved or tested medical device and not a validated medical simulation. Not for treatment decisions.</footer>
+
+<script src="../vendor/three.min.js"></script>
+<script src="../vendor/OrbitControls.js"></script>
+<script src="../vendor/RoomEnvironment.js"></script>
+<script>
+(function(){
+'use strict';
+var Q = new URLSearchParams(location.search);
+if (Q.get('still') === '1') { document.body.classList.add('still'); document.documentElement.classList.add('still'); }
+if (Q.get('marks') === '0') document.body.classList.add('nomarks');
+if (Q.get('marks') === 'dots') document.body.classList.add('dots');
+THREE.ColorManagement.legacyMode = false;
+var P = { version:'#102F46', use:'#087F80', out:'#A8641F', safe:'#B23A48', access:'#6A5BA3' };
+var PN = { version:'Pillar 1 · Software version', use:'Pillar 2 · Patient engagement', out:'Pillar 3 · Clinical outcomes', safe:'Safety', access:'Access and usability' };
+var INFO = {
+  tx:      {n:'Reusable transmitter', p:'version', what:'Snaps onto each new pod and lasts 1–2+ years, so the expensive electronics are not thrown away.', data:'Holds the firmware; every record carries its version.', link:'Pillar 1: outcomes can be compared before and after a software update, which our review found is rarely possible today.'},
+  pcb:     {n:'Electronics: Bluetooth, control loop', p:'version', what:'Runs the 5-minute loop (sense, decide, deliver, safeguard), the staged fallback and the site cross-check.', data:'Firmware and app version, alarms and rule triggers.', link:'Pillar 1: a version change becomes visible in the same record as glucose and insulin.'},
+  batt:    {n:'Rechargeable battery', p:'version', what:'Powers sensing, pumping and Bluetooth.', data:'Battery and sync status.', link:'A missing record can be a flat battery, not non-use. Surveillance must tell the two apart.'},
+  motor:   {n:'Micro-drive and lead screw', p:'use', what:'Drives a pin that pushes the reservoir plunger.', data:'Every insulin delivery, by time and units.', link:'Pillar 2: actual use is recorded, not assumed.'},
+  press:   {n:'Occlusion pressure sensor', p:'safe', what:'Watches line pressure; halts delivery at ≥30 kPa.', data:'Occlusion alarms.', link:'Safety signals still go to conventional adverse-event reporting.'},
+  enc:     {n:'Fill encoder (new)', p:'use', what:'Reads plunger position to compute units loaded and days covered.', data:'Units loaded per pod; under-fill warnings.', link:'Pillar 2: shows whether each pod could last its 3 days.'},
+  pod:     {n:'Disposable 3-day pod', p:'safe', what:'Everything that touches insulin or skin. Closed, sharps-contained unit at disposal.', data:'Pod change date and time.', link:'Pod changes are a simple, objective measure of continued use.'},
+  res:     {n:'Reservoir, 300 U', p:'use', what:'User-filled through a septum; 320 U barrel. Covers 3 days up to about 95 U/day (design target).', data:'Units loaded and remaining.', link:'Keeping insulin out of the device until the user fills it helps avoid drug–device combination review (to be confirmed).'},
+  ins:     {n:'Dual spring inserter', p:'safe', what:'One press fires both needles together, then retracts and locks them inside the pod.', data:'Insertion and lock confirmed.', link:'The user never sees or handles a sharp.'},
+  path:    {n:'Fluid path', p:'safe', what:'Side-port feed from reservoir to cannula, with a tap to the pressure diaphragm.', data:'Pressure signal.', link:'Part of the occlusion safety chain.'},
+  cgm:     {n:'CGM filament', p:'out', what:'About 5 mm deep, on its own site 10–12 mm from the insulin, so insulin does not distort the reading.', data:'Glucose every 5 minutes after about 30 minutes warm-up.', link:'Pillar 3: continuous clinical data linked to insulin and version. HbA1c still comes from the lab.'},
+  can:     {n:'Soft insulin cannula', p:'use', what:'Soft FEP cannula about 6 mm deep; only soft parts stay under the skin.', data:'Delivered insulin.', link:'Pillar 2, and the second site that makes the cross-check possible.'},
+  pad:     {n:'Adhesive pad', p:'access', what:'Holds the patch for 3 days of wear.', data:'Early removal shows up as a pod change.', link:'Wearability and skin comfort decide whether people keep using it: reach and equity.'}
+};
+var ORDER = ['tx','pcb','batt','motor','press','enc','pod','res','ins','path','cgm','can','pad'];
+
+var stage = document.getElementById('stage'), labels = document.getElementById('labels');
+var renderer = new THREE.WebGLRenderer({antialias:true, alpha:true, preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping;
+stage.insertBefore(renderer.domElement, labels);
+var scene = new THREE.Scene();
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new THREE.RoomEnvironment(), 0.04).texture;
+var camera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+var controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.enablePan = false; controls.minDistance = 4; controls.maxDistance = 60;
+var key = new THREE.DirectionalLight(0xffffff, 1.0); key.position.set(4, 9, 6); scene.add(key);
+scene.add(new THREE.HemisphereLight(0xffffff, 0xcfdadf, 0.35));
+function mat(c, o){ return new THREE.MeshPhysicalMaterial(Object.assign({color:c, roughness:0.4, clearcoat:0.4, clearcoatRoughness:0.3, envMapIntensity:0.7}, o||{})); }
+function rbox(w, h, d, r, m){ var s = new THREE.Shape(), x = -w/2, z = -d/2; r = Math.min(r, w/2, d/2);
+  s.moveTo(x + r, z); s.lineTo(x + w - r, z); s.quadraticCurveTo(x + w, z, x + w, z + r); s.lineTo(x + w, z + d - r); s.quadraticCurveTo(x + w, z + d, x + w - r, z + d);
+  s.lineTo(x + r, z + d); s.quadraticCurveTo(x, z + d, x, z + d - r); s.lineTo(x, z + r); s.quadraticCurveTo(x, z, x + r, z);
+  var g = new THREE.ExtrudeGeometry(s, {depth:h, bevelEnabled:true, bevelThickness:Math.min(0.08,h/3), bevelSize:0.08, bevelSegments:4, curveSegments:16});
+  g.rotateX(Math.PI/2); g.translate(0, h, 0); return new THREE.Mesh(g, m); }
+function cyl(r, h, m, seg){ return new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 32), m); }
+var V = function(x,y,z){ return new THREE.Vector3(x||0,y||0,z||0); };
+
+// skin block (cut-away so the insertions are visible)
+var skin = new THREE.Group(); scene.add(skin);
+(function(){ var epi = new THREE.Mesh(new THREE.BoxGeometry(9, 0.12, 6), mat('#e9c2ad', {roughness:0.8, clearcoat:0, transparent:true, opacity:0.55, depthWrite:false})); epi.position.y = -0.06; epi.position.z = -2.0; skin.add(epi);
+  var der = new THREE.Mesh(new THREE.BoxGeometry(9, 0.5, 6), mat('#e3a796', {roughness:0.9, clearcoat:0, transparent:true, opacity:0.35, depthWrite:false})); der.position.y = -0.37; der.position.z = -2.0; skin.add(der);
+  var sub = new THREE.Mesh(new THREE.BoxGeometry(9, 0.9, 6), mat('#f1dba0', {roughness:0.9, clearcoat:0, transparent:true, opacity:0.3, depthWrite:false})); sub.position.y = -1.07; sub.position.z = -2.0; skin.add(sub);
+  var c = document.createElement('canvas'); c.width = 512; c.height = 64; var g = c.getContext('2d'); g.fillStyle = '#5B6B75'; g.font = 'bold 30px Arial'; g.fillText('skin (cut-away)', 8, 42);
+  var t = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.33), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c), transparent:true})); t.position.set(-3.0, -0.75, 1.02); skin.add(t); })();
+
+var dev = new THREE.Group(); scene.add(dev);
+var parts = {}, pickables = [];
+function part(id, home, off){ var g = new THREE.Group(); g.position.copy(home); dev.add(g); parts[id] = {g:g, home:home.clone(), off:off, mats:[]}; return g; }
+function add(id, mesh){ mesh.userData.part = id; parts[id].g.add(mesh); pickables.push(mesh); if (parts[id].mats.indexOf(mesh.material) < 0) parts[id].mats.push(mesh.material); return mesh; }
+var POD_H = 0.9, TX_H = 0.62;
+// adhesive pad
+part('pad', V(0, 0, 0), V(0, -1.3, 0)); add('pad', rbox(7.6, 0.05, 5.4, 1.2, mat('#f4f1ea', {roughness:0.95, clearcoat:0, transparent:true, opacity:0.7, depthWrite:false})));
+// pod shell (x-ray)
+var podMat = mat('#e9eef0', {transparent:true, opacity:0.32, roughness:0.2, clearcoat:0.8, depthWrite:false});
+part('pod', V(0, 0.05, 0), V(0, 0, 0)); add('pod', rbox(6.4, POD_H, 4.2, 0.9, podMat));
+var rs = new THREE.Shape(); (function(){ function rr(path, w, d, r){ var x=-w/2, z=-d/2; path.moveTo(x+r,z); path.lineTo(x+w-r,z); path.quadraticCurveTo(x+w,z,x+w,z+r); path.lineTo(x+w,z+d-r); path.quadraticCurveTo(x+w,z+d,x+w-r,z+d); path.lineTo(x+r,z+d); path.quadraticCurveTo(x,z+d,x,z+d-r); path.lineTo(x,z+r); path.quadraticCurveTo(x,z,x+r,z); }
+  rr(rs, 6.62, 4.42, 1.0); var h = new THREE.Path(); rr(h, 6.3, 4.1, 0.85); rs.holes.push(h); })();
+var rg = new THREE.ExtrudeGeometry(rs, {depth:0.1, bevelEnabled:false, curveSegments:16}); rg.rotateX(Math.PI/2); rg.translate(0, 0.1, 0); var rim = new THREE.Mesh(rg, mat('#087F80')); rim.position.y = POD_H * 0.55; add('pod', rim);
+// pogo pins
+[[-0.6,0.9],[-0.3,0.9],[0,0.9]].forEach(function(p){ var pin = cyl(0.05, 0.12, mat('#d6b25e', {metalness:1, roughness:0.3}), 12); pin.position.set(p[0], POD_H + 0.05, p[1]); add('pod', pin); });
+// reservoir
+part('res', V(-1.0, 0.5, -0.95), V(-1.8, 0.9, 2.6));
+(function(){ var g = new THREE.CylinderGeometry(0.36, 0.36, 3.4, 40); g.rotateZ(Math.PI/2); add('res', new THREE.Mesh(g, mat('#ffffff', {transparent:true, opacity:0.35, roughness:0.05, clearcoat:1, depthWrite:false})));
+  var lg = new THREE.CylinderGeometry(0.31, 0.31, 2.6, 32); lg.rotateZ(Math.PI/2); var liq = new THREE.Mesh(lg, mat('#bfe6ea', {transparent:true, opacity:0.6})); liq.position.x = 0.35; add('res', liq);
+  var pg = new THREE.CylinderGeometry(0.33, 0.33, 0.25, 32); pg.rotateZ(Math.PI/2); var pl = new THREE.Mesh(pg, mat('#30373b', {roughness:0.8})); pl.position.x = -1.1; add('res', pl);
+  var sp = cyl(0.14, 0.18, mat('#8a2b36', {roughness:0.6}), 20); sp.rotation.z = Math.PI/2; sp.position.x = 1.78; add('res', sp); })();
+// fluid path
+part('path', V(0, 0.32, 0), V(0, 0.6, 2.2));
+(function(){ var curve = new THREE.CatmullRomCurve3([V(0.75,0.18,-0.95), V(1.6,0.05,-0.7), V(2.3,-0.1,0.2), V(2.55,-0.15,0.75)]);
+  add('path', new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 0.05, 10), mat('#7fc4c9', {roughness:0.3})));
+  var dia = cyl(0.22, 0.06, mat('#9aa8b0', {metalness:0.6, roughness:0.3}), 24); dia.position.set(1.6, 0.12, -0.7); add('path', dia); })();
+// dual inserter: two barrels, 1.1 apart (10–12 mm)
+var SENS_X = 1.45, CAN_X = 2.55, BZ = 0.75;
+part('ins', V(0, 0.05, 0), V(0.4, 1.7, 2.2));
+var collars = [], needles = [];
+[SENS_X, CAN_X].forEach(function(x, i){
+  var b = cyl(0.27, POD_H - 0.05, mat('#ffffff', {transparent:true, opacity:0.4, roughness:0.1, depthWrite:false})); b.position.set(x, (POD_H - 0.05)/2, BZ); add('ins', b);
+  var spring = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3((function(){ var a=[]; for(var k=0;k<=80;k++){ var t=k/80; a.push(V(x+Math.cos(t*Math.PI*14)*0.18, 0.35+t*0.45, BZ+Math.sin(t*Math.PI*14)*0.18)); } return a; })()), 200, 0.018, 6), mat('#b9c2c7', {metalness:0.95, roughness:0.25}));
+  add('ins', spring);
+  var col = cyl(0.3, 0.1, mat('#9aa8b0', {metalness:0.5, roughness:0.4})); col.position.set(x, 0.3, BZ); add('ins', col); collars.push(col);
+  var nd = cyl(i === 0 ? 0.03 : 0.025, 1.0, mat('#d9dee1', {metalness:1, roughness:0.15}), 12); nd.position.set(x, 0.75, BZ); add('ins', nd); needles.push(nd);
+});
+var btn = cyl(0.3, 0.12, mat('#087F80', {clearcoat:0.8})); btn.position.set(2.0, POD_H + 0.06, -0.9); add('ins', btn);
+// under-skin elements (stay attached to pod position, below skin)
+part('cgm', V(SENS_X, 0, BZ), V(0, -1.4, 0));
+var fil = cyl(0.06, 0.5, mat('#d6b25e', {metalness:0.8, roughness:0.3}), 12); fil.position.y = -0.25; add('cgm', fil);
+var filTip = cyl(0.08, 0.12, mat('#A8641F', {roughness:0.5}), 12); filTip.position.y = -0.44; add('cgm', filTip);
+part('can', V(CAN_X, 0, BZ), V(0, -1.4, 0));
+var canM = add('can', new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.6, 16), mat('#e6f4f5', {roughness:0.3}))); canM.position.y = -0.3;
+var drop = new THREE.Mesh(new THREE.SphereGeometry(0.14, 20, 16), mat('#7fe0d6', {transparent:true, opacity:0.0, roughness:0.1})); drop.position.y = -0.62; parts.can.g.add(drop);
+// spacing marker
+var spacing = new THREE.Group(); scene.add(spacing);
+(function(){ var m = new THREE.LineBasicMaterial({color:0x087F80}); var y = -0.75;
+  spacing.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(SENS_X,y,BZ+0.4), V(CAN_X,y,BZ+0.4)]), m));
+  var c = document.createElement('canvas'); c.width = 256; c.height = 64; var g = c.getContext('2d'); g.fillStyle = '#087F80'; g.font = 'bold 40px Arial'; g.fillText('10–12 mm', 20, 46);
+  var t = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.28), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c), transparent:true, depthWrite:false})); t.position.set((SENS_X+CAN_X)/2, y - 0.2, BZ + 0.42); spacing.add(t); })();
+// transmitter shell + internals
+var txY = POD_H + 0.12;
+part('tx', V(-1.05, txY, -0.1), V(0, 1.55, 0));
+var txMat = mat('#102F46', {roughness:0.3, clearcoat:0.9, transparent:true, opacity:0.92});
+add('tx', rbox(3.9, TX_H, 3.4, 0.8, txMat));
+var led = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), new THREE.MeshBasicMaterial({color:'#38d6c7'})); led.position.set(1.4, TX_H + 0.06, 1.15); parts.tx.g.add(led);
+(function(){ var c = document.createElement('canvas'); c.width = 512; c.height = 128; var g = c.getContext('2d'); g.fillStyle = '#ffffff'; g.font = 'bold 54px Arial'; g.fillText('Gen 1', 24, 80); g.fillStyle = '#7fe0d6'; g.font = '34px Arial'; g.fillText('reusable', 210, 80);
+  var t = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.45), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c), transparent:true})); t.rotation.x = -Math.PI/2; t.position.set(-0.3, TX_H + 0.1, 0.1); parts.tx.g.add(t); })();
+part('pcb', V(-1.0, txY + 0.25, -0.2), V(0, 3.5, -0.3));
+add('pcb', new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.05, 2.2), mat('#0B5E6E', {roughness:0.6})));
+[[-1.0,0.6,0.6,'#1b1f22'],[0.2,0.45,0.45,'#22272b'],[1.1,0.5,0.3,'#d0d6da']].forEach(function(c){ var b = new THREE.Mesh(new THREE.BoxGeometry(c[1], 0.08, c[2]), mat(c[3], {metalness:c[3]==='#d0d6da'?0.9:0})); b.position.set(c[0], 0.06, 0.3); add('pcb', b); });
+var ant = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.02, 0.12), mat('#d6b25e', {metalness:1, roughness:0.3})); ant.position.set(0.4, 0.04, -0.9); add('pcb', ant);
+part('batt', V(-2.0, txY + 0.12, 0.6), V(-1.2, 2.8, 1.0));
+add('batt', rbox(1.4, 0.22, 1.0, 0.15, mat('#2c3e4a', {roughness:0.4})));
+part('motor', V(0.3, txY + 0.2, -1.0), V(1.4, 2.9, -1.2));
+(function(){ var g1 = new THREE.CylinderGeometry(0.2, 0.2, 0.6, 24); g1.rotateZ(Math.PI/2); add('motor', new THREE.Mesh(g1, mat('#aeb8be', {metalness:0.9, roughness:0.25})));
+  var g2 = new THREE.CylinderGeometry(0.05, 0.05, 1.4, 12); g2.rotateZ(Math.PI/2); var sc = new THREE.Mesh(g2, mat('#c4ccd1', {metalness:0.95, roughness:0.2})); sc.position.x = -1.0; add('motor', sc); })();
+part('press', V(0.4, txY + 0.08, 0.5), V(2.4, 2.6, 0.6));
+add('press', cyl(0.24, 0.08, mat('#c9d3d8', {metalness:0.8, roughness:0.25}), 24));
+part('enc', V(-1.5, txY + 0.06, -1.3), V(-1.5, 2.5, -1.9));
+add('enc', new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.05, 0.16), mat('#A8641F', {metalness:0.4, roughness:0.4})));
+
+ORDER.forEach(function(id, i){ parts[id].num = i + 1; });
+
+// ---------- markers ----------
+ORDER.forEach(function(id){ var d = document.createElement('div'); d.className = 'mk'; d.style.background = P[INFO[id].p];
+  d.innerHTML = parts[id].num + '<span>' + INFO[id].n + '</span>'; d.title = INFO[id].n;
+  d.addEventListener('click', function(e){ e.stopPropagation(); select(id); }); labels.appendChild(d); parts[id].mk = d; });
+function anchor(id){ var b = new THREE.Box3().setFromObject(parts[id].g), c = b.getCenter(V());
+  if (id === 'cgm' || id === 'can') { c.y = b.min.y - 0.15; c.x += (id === 'cgm' ? -0.25 : 0.25); } else c.y = b.max.y + 0.1; return c; }
+
+// ---------- state ----------
+var ex = {cur:0, target:0}, xray = true;
+var ins = {needle:0.75, depth:0, dropOp:0, locked:false, place:0};   // needle tip centre y; depth 0..1 = soft parts deployed; place: 1 = patch lifted
+var insT = Object.assign({}, ins);
+function setExplode(on){ ex.target = on ? 1 : 0; var b = document.getElementById('bExplode'); b.setAttribute('aria-pressed', on); b.textContent = on ? 'Assemble' : 'Explode view'; camGoal = 'home'; }
+document.getElementById('bExplode').onclick = function(){ closeCard(); setExplode(ex.target < 0.5); };
+var selected = null, lens = false;
+function tint(){ ORDER.forEach(function(id){ var col = lens ? new THREE.Color(P[INFO[id].p]) : new THREE.Color(0), k = lens ? 0.45 : 0;
+  if (id === selected) { col = new THREE.Color('#38d6c7'); k = 0.55; }
+  parts[id].mats.forEach(function(m){ if (m.emissive) { m.emissive.copy(col); m.emissiveIntensity = k; } }); parts[id].mk.classList.toggle('on', id === selected); }); }
+var OV = {what:document.getElementById('iWhat').textContent, data:document.getElementById('iData').textContent, link:document.getElementById('iLink').textContent};
+function overview(){ selected = null; document.getElementById('iName').textContent = 'Tap any part of the patch'; var pl = document.getElementById('iPillar'); pl.textContent = 'Drag to rotate · pinch or scroll to zoom'; pl.style.background = 'var(--teal)';
+  document.getElementById('iWhat').textContent = OV.what; document.getElementById('iData').textContent = OV.data; document.getElementById('iLink').textContent = OV.link; tint(); }
+function select(id){ selected = id; var I = INFO[id]; document.getElementById('iName').textContent = parts[id].num + '  ' + I.n;
+  var pl = document.getElementById('iPillar'); pl.textContent = PN[I.p]; pl.style.background = P[I.p];
+  document.getElementById('iWhat').textContent = I.what; document.getElementById('iData').textContent = I.data; document.getElementById('iLink').textContent = I.link; tint(); }
+document.getElementById('bLens').onclick = function(){ lens = !lens; this.setAttribute('aria-pressed', lens); document.getElementById('legend').style.display = lens ? 'flex' : 'none'; tint(); };
+document.getElementById('bNames').onclick = function(){ var on = !labels.classList.contains('show-names'); labels.classList.toggle('show-names', on); this.setAttribute('aria-pressed', on); };
+var ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), down = null;
+renderer.domElement.addEventListener('pointerdown', function(e){ down = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', function(e){ if (!down || Math.hypot(e.clientX-down[0], e.clientY-down[1]) > 6) return;
+  var r = renderer.domElement.getBoundingClientRect(); mouse.set((e.clientX-r.left)/r.width*2-1, -(e.clientY-r.top)/r.height*2+1); ray.setFromCamera(mouse, camera);
+  var h = ray.intersectObjects(pickables, false)[0]; if (h) select(h.object.userData.part); });
+
+// ---------- status panel ----------
+function status(main, sub, col){ var m = document.getElementById('sMain'); m.textContent = main; m.style.color = col || ''; document.getElementById('sSub').textContent = sub; }
+function setLed(c){ led.material.color.set(c); }
+function lockColour(on){ collars.forEach(function(c){ c.material.color.set(on ? '#2fae6b' : '#9aa8b0'); }); }
+
+// ---------- guided sequences ----------
+var SEQ = {
+  press: [
+    {t:'Arm', x:'Peel the liner and place the pod with the transmitter attached. The fill sensor has already confirmed how much insulin is loaded.', s:{needle:0.75, depth:0, dropOp:0, locked:false, place:1}, st:['Armed','Fill confirmed: 300 U · covers 3 days'], led:'#38d6c7', ex:0},
+    {t:'Place on skin', x:'The adhesive pad holds the patch in place. Nothing has entered the skin yet.', s:{needle:0.75, depth:0, dropOp:0, locked:false, place:0}, st:['Placed','Ready to press'], led:'#38d6c7', ex:0},
+    {t:'Fire: one press, two insertions', x:'One button releases both springs. The insulin needle carries a soft cannula to about 6 mm; the sensor needle carries the CGM filament to about 5 mm, 10–12 mm away.', s:{needle:-0.05, depth:1, dropOp:0, locked:false, place:0}, st:['Inserting','Two sites, one press'], led:'#f0b429', ex:0, sel:'ins'},
+    {t:'Release and retract', x:'The soft parts stay in place. A second spring pulls both steel needles back up into their barrels.', s:{needle:0.82, depth:1, dropOp:0, locked:false, place:0}, st:['Needles retracting',''], led:'#f0b429', ex:0},
+    {t:'Lock: no sharps', x:'A one-way collar locks each needle at least 3 mm above the pod floor. It can never re-extend. The collars turn green.', s:{needle:0.82, depth:1, dropOp:0, locked:true, place:0}, st:['Needles locked','No exposed sharps'], led:'#2fae6b', ex:0, sel:'ins'},
+    {t:'Prime and warm up', x:'The pump primes about 1 U through the cannula. The sensor warms up for about 30 minutes while programmed basal insulin runs.', s:{needle:0.82, depth:1, dropOp:1, locked:true, place:0}, st:['Warm-up ~30 min','Primed ~1 U · basal running'], led:'#2fae6b', ex:0, sel:'can'},
+    {t:'Linked record from day one', x:'Every 5 minutes: glucose, insulin delivered, firmware and app version — for the same person. This is our surveillance framework, built into the device. After 3 days the pod is peeled off as a closed, sharps-contained unit.', s:{needle:0.82, depth:1, dropOp:0, locked:true, place:0}, st:['Running (simulated)','Glucose · insulin · version linked'], led:'#2fae6b', ex:0, lens:true}
+  ],
+  loss: [
+    {t:'Signal lost', x:'The glucose signal drops out. The patch does not keep dosing blind with no time limit.', st:['CGM signal lost','Stage A starts'], led:'#f0b429', sel:'cgm'},
+    {t:'Stage A: up to 2 hours', x:'Basal insulin runs at 50% for up to 2 hours and the app asks for a fingerstick. A low fingerstick (<90 mg/dL) suspends basal; a new reading or returning signal resets the timer.', st:['Stage A · basal 50%','Fingerstick requested'], led:'#f0b429', sel:'pcb'},
+    {t:'Stage B: suspend and escalate', x:'After 2 hours with no glucose data, basal is suspended and an escalated alarm asks the user to change the pod or use a backup pen.', st:['Stage B · basal suspended','Change pod or use backup pen'], led:'#d64545', sel:'pcb'}
+  ],
+  site: [
+    {t:'Insulin site starts to fail', x:'The insulin site becomes inflamed or partly blocked, without a full occlusion. Glucose rises.', st:['Glucose rising',''], led:'#f0b429', sel:'can'},
+    {t:'Cross-check on the healthy site', x:'Because the sensor has its own site, it still reads correctly. Glucose above 200 mg/dL and rising for 60 minutes despite delivered insulin, with no occlusion, triggers an alert.', st:['Insulin site suspect','Automatic increases capped at 1.5× basal'], led:'#d64545', sel:'cgm'},
+    {t:'Why two sites matter', x:'With one shared site, the same failure could bias the sensor too and go unnoticed. The alert is also a safety signal for post-market review.', st:['Change pod advised',''], led:'#d64545', lens:true}
+  ],
+  fill: [
+    {t:'Pod under-filled', x:'The user fills the reservoir through the septum. The fill encoder reads the plunger position when the pod is attached.', st:['Fill check','Loaded: 150 U (simulated)'], led:'#f0b429', sel:'enc'},
+    {t:'Warn before it runs out', x:'At this person\'s daily dose (example 57 U/day) 150 U covers about 2.6 days, so the app warns that the pod will not last 3 days and forecasts the run-out time.', st:['Will not last 3 days','Run-out forecast shown'], led:'#d64545', sel:'res'}
+  ]
+};
+var seq = null, idx = -1, card = document.getElementById('card');
+var NAMES = {press:'ONE-PRESS INSERTION', loss:'SIGNAL LOST', site:'INSULIN-SITE FAILURE', fill:'UNDER-FILLED POD'};
+function show(name, i){ seq = name; idx = i; var s = SEQ[name][i]; card.style.display = 'block';
+  document.getElementById('cStep').textContent = NAMES[name] + ' · STEP ' + (i + 1) + ' OF ' + SEQ[name].length;
+  document.getElementById('cTitle').textContent = s.t; document.getElementById('cText').textContent = s.x;
+  document.getElementById('cPrev').disabled = i === 0; document.getElementById('cNext').textContent = i === SEQ[name].length - 1 ? 'Finish' : 'Next';
+  if (s.s) Object.assign(insT, s.s); else Object.assign(insT, {needle:0.82, depth:1, dropOp:0, locked:true, place:0});
+  lockColour(insT.locked); if (s.ex !== undefined) setExplode(!!s.ex); else setExplode(false);
+  status(s.st[0], s.st[1], s.led === '#d64545' ? '#B23A48' : (s.led === '#f0b429' ? '#A8641F' : '')); setLed(s.led);
+  lens = !!s.lens; document.getElementById('bLens').setAttribute('aria-pressed', lens); document.getElementById('legend').style.display = lens ? 'flex' : 'none';
+  if (s.sel) select(s.sel); else overview(); camGoal = 'home'; }
+function closeCard(){ card.style.display = 'none'; seq = null; }
+document.getElementById('cNext').onclick = function(){ if (idx < SEQ[seq].length - 1) show(seq, idx + 1); else { closeCard(); status('Running (simulated)', 'Glucose · insulin · version linked'); setLed('#2fae6b'); } };
+document.getElementById('cPrev').onclick = function(){ if (idx > 0) show(seq, idx - 1); };
+document.getElementById('cClose').onclick = closeCard;
+document.getElementById('bPress').onclick = function(){ show('press', 0); };
+document.getElementById('bLoss').onclick = function(){ show('loss', 0); };
+document.getElementById('bSite').onclick = function(){ show('site', 0); };
+document.getElementById('bFill').onclick = function(){ show('fill', 0); };
+
+// ---------- camera ----------
+var camGoal = 'home', vertical = false;
+function fit(){ var w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); vertical = camera.aspect < 0.9; }
+function distFor(e){ var t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), halfW = 5.0 + 0.6 * e, halfH = 2.2 + 3.0 * e;
+  return Math.max(8, halfW / (t * camera.aspect) * 1.05, halfH / t * 1.1); }
+window.addEventListener('resize', fit); fit();
+function camWant(e){ var d = distFor(e), aim = V(0.3, -0.05 + 1.35 * e, 0), el = 0.14 + 0.26 * e; return {aim:aim, pos:V(aim.x + d * 0.28, aim.y + d * el, aim.z + d * 0.95)}; }
+controls.addEventListener('start', function(){ camGoal = null; });
+
+// ---------- loop ----------
+var clock = new THREE.Clock();
+var ease = function(t){ return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3)/2; };
+function loop(){
+  var dt = Math.min(clock.getDelta(), 0.05), k = Math.min(1, dt * 4);
+  ex.cur += (ex.target - ex.cur) * k; var e = ease(Math.max(0, Math.min(1, ex.cur)));
+  ['needle','depth','dropOp','place'].forEach(function(p){ ins[p] += (insT[p] - ins[p]) * Math.min(1, dt * (p === 'needle' ? 6 : 4)); });
+  var lift = ins.place * 1.6;
+  ORDER.forEach(function(id){ var p = parts[id]; p.g.position.copy(p.home).addScaledVector(p.off, e); if (id !== 'cgm' && id !== 'can') p.g.position.y += lift; });
+  needles.forEach(function(n){ n.position.y = ins.needle; });
+  var d = Math.max(0.001, ins.depth); parts.cgm.g.scale.y = d; parts.can.g.scale.y = d; parts.cgm.g.visible = parts.can.g.visible = ins.depth > 0.02;
+  drop.material.opacity = 0.8 * ins.dropOp * (0.6 + 0.4 * Math.sin(clock.elapsedTime * 4));
+  podMat.opacity = xray ? 0.5 : 0.95; skin.visible = e < 0.5; spacing.visible = e < 0.5 && ins.depth > 0.9;
+  var w = camWant(e);
+  if (camGoal) { camera.position.lerp(w.pos, Math.min(1, dt * 2.2)); controls.target.lerp(w.aim, Math.min(1, dt * 2.5)); if (!seq && camera.position.distanceTo(w.pos) < 0.05) camGoal = null; }
+  controls.update(); renderer.render(scene, camera);
+  var r = renderer.domElement, cw = r.clientWidth, ch = r.clientHeight;
+  ORDER.forEach(function(id){ var a = anchor(id).project(camera), mk = parts[id].mk;
+    var hide = a.z > 1 || ((id === 'cgm' || id === 'can') && ins.depth < 0.5) || (['pcb','batt','motor','press','enc'].indexOf(id) >= 0 && e < 0.35);
+    mk.style.display = hide ? 'none' : 'flex'; mk.style.left = ((a.x + 1) / 2 * cw) + 'px'; mk.style.top = ((1 - a.y) / 2 * ch) + 'px'; });
+  requestAnimationFrame(loop);
+}
+// presets: ?view=exploded|inserted&lens=1&names=1
+if (Q.get('view') === 'exploded') { ex.cur = ex.target = 1; setExplode(true); }
+if (Q.get('view') === 'inserted' || Q.get('view') === 'exploded') { Object.assign(ins, {needle:0.82, depth:1, locked:true}); Object.assign(insT, ins); lockColour(true); }
+if (Q.get('lens') === '1') document.getElementById('bLens').click();
+if (Q.get('names') === '1') document.getElementById('bNames').click();
+(function snap(){ var w = camWant(ease(ex.cur)); camera.position.copy(w.pos); controls.target.copy(w.aim); controls.update(); })();
+loop();
+})();
+</script>
+</body>
+</html>

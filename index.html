@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linked Device Prototypes</title>
+<meta name="description" content="SHARE 2026: two device concepts that record software version, patient use and glucose for the same person — a connected pen-meter and a CGM + insulin patch. Our concepts; not built or tested.">
+<style>
+:root{
+  --navy:#102F46; --teal:#087F80; --warm:#A8641F;
+  --bg:#F7F9FA; --panel:#FFFFFF; --text:#1F2D38; --muted:#5B6B75; --line:#CFDADF; --soft:#E8F1F2; --warmsoft:#F6EEE5; --head:#102F46;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0C1B26; --panel:#12283A; --text:#E7EEF2; --muted:#A9C3CC; --line:#24465C; --soft:#163447; --warmsoft:#3A2A1A; --head:#E7EEF2; --teal:#3BB8B9; } }
+:root[data-theme="dark"]{ --bg:#0C1B26; --panel:#12283A; --text:#E7EEF2; --muted:#A9C3CC; --line:#24465C; --soft:#163447; --warmsoft:#3A2A1A; --head:#E7EEF2; --teal:#3BB8B9; }
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;line-height:1.45;-webkit-text-size-adjust:100%}
+header{padding:14px 20px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:var(--panel)}
+header .t{font-weight:700;font-size:18px;color:var(--head)}
+header .s{font-size:13px;color:var(--muted)}
+.badge{display:inline-block;font-size:12px;font-weight:700;color:var(--warm);background:var(--warmsoft);border:1px solid var(--warm);border-radius:999px;padding:5px 12px}
+.wrap{max-width:1120px;margin:0 auto;padding:24px 16px 40px}
+h1{font-size:28px;margin:6px 0 8px;color:var(--head)}
+h2{font-size:21px;margin:34px 0 10px;color:var(--head)}
+.lead{font-size:16px;color:var(--text);max-width:820px;margin:0 0 6px}
+.pillars{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
+.pillars span{font-size:13px;font-weight:700;color:#fff;border-radius:6px;padding:6px 10px}
+.routes{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column}
+.card.r1{border-top:5px solid var(--navy)} .card.r2{border-top:5px solid var(--teal)}
+.tag{font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--muted)}
+.card h3{font-size:20px;margin:4px 0 10px;color:var(--head)}
+.pic{background:radial-gradient(ellipse at 50% 40%,#fff 0%,#E8F1F2 75%);border-radius:10px;height:220px;display:flex;align-items:center;justify-content:center;padding:10px;margin-bottom:12px}
+.pic img{max-width:100%;max-height:100%}
+.card ul{margin:0 0 14px;padding-left:20px;font-size:15px}
+.card li{margin:3px 0}
+.go{margin-top:auto;display:inline-block;text-align:center;text-decoration:none;font-weight:700;font-size:15px;border-radius:8px;padding:11px 14px;color:#fff;background:var(--teal)}
+.r1 .go{background:#102F46}
+.tbl{width:100%;overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px;background:var(--panel);font-size:14.5px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:#102F46;color:#fff}
+td:first-child{font-weight:700;color:var(--head);width:24%}
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.steps div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px}
+.steps b{display:block;font-size:13px;margin-bottom:4px}
+.steps .a b{color:var(--navy)} .steps .b b{color:var(--teal)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .steps .a b{color:#A9C3CC} }
+.note{background:var(--warmsoft);border-left:4px solid var(--warm);padding:10px 14px;border-radius:6px;font-size:14.5px;margin-top:22px}
+footer{border-top:1px solid var(--line);padding:16px;font-size:13px;color:var(--muted);text-align:center}
+@media (max-width:760px){ .routes{grid-template-columns:1fr} .steps{grid-template-columns:1fr} h1{font-size:23px} .pic{height:170px} }
+</style>
+</head>
+<body>
+<header>
+  <div><div class="t">From framework to device · two linked-record prototypes</div><div class="s">SHARE 2026 · Janyavula &amp; Ramireddy · The Apollo University</div></div>
+  <span class="badge">OUR CONCEPTS · DESIGN TARGETS ONLY · NOT BUILT OR TESTED</span>
+</header>
+<div class="wrap">
+  <h1>Two routes to one linked record</h1>
+  <p class="lead">Our six-regulator review proposed following three things together after a digital therapy is authorised. Both devices below are designed to record all three for the same person, so post-market surveillance can see them together.</p>
+  <div class="pillars"><span style="background:#102F46">1 · Software version</span><span style="background:#087F80">2 · Patient engagement</span><span style="background:#A8641F">3 · Clinical outcomes</span></div>
+
+  <div class="routes">
+    <div class="card r1">
+      <span class="tag">ROUTE 1 · PILOT FIRST</span>
+      <h3>Smart insulin pen + worn CGM hub</h3>
+      <div class="pic"><img src="img/pen.png" alt="3D model of the smart insulin pen docking into a worn hub that holds a CGM sensor and a soft insulin cannula; a test strip sits at the pen tail."></div>
+      <ul>
+        <li>Reusable motorised pen docks into a worn hub (CGM + soft cannula), so doses go in without new skin punctures</li>
+        <li>The person decides and confirms every dose; strip meter as a backup</li>
+        <li>Includes a virtual test bench, specs and a cost model (simulation, not evidence)</li>
+      </ul>
+      <a class="go" href="pen/">Open the pen in 3D →</a>
+    </div>
+    <div class="card r2">
+      <span class="tag">ROUTE 2 · GEN 1 TARGET</span>
+      <h3>CGM + insulin patch</h3>
+      <div class="pic"><img src="img/patch.png" alt="Exploded 3D view of the CGM + insulin patch with numbered parts: reusable transmitter, electronics, disposable pod, reservoir, inserter, CGM filament and soft cannula."></div>
+      <ul>
+        <li>Reusable transmitter on a disposable 3-day pod; one press inserts a CGM and a soft insulin cannula 10–12 mm apart</li>
+        <li>Glucose every 5 minutes and every insulin delivery, recorded automatically</li>
+        <li>Built-in safety rules for signal loss, site failure and under-filling</li>
+      </ul>
+      <a class="go" href="patch/">Open the patch in 3D →</a>
+    </div>
+  </div>
+
+  <h2>How they compare</h2>
+  <div class="tbl"><table>
+    <tr><th></th><th>Route 1 · Pen-meter</th><th>Route 2 · Patch</th></tr>
+    <tr><td>1 · Software version</td><td>Firmware and app version on every dose and reading (pen and hub)</td><td>Firmware and app version on every record</td></tr>
+    <tr><td>2 · Patient engagement</td><td>Dose dialled vs delivered (encoder), docking, hub wear</td><td>Insulin delivered, pod changes, wear time, signal gaps</td></tr>
+    <tr><td>3 · Clinical outcomes</td><td>Hub CGM every 5 minutes, strip backup; HbA1c from the lab</td><td>Glucose every 5 minutes; HbA1c from the lab</td></tr>
+    <tr><td>Who decides insulin</td><td>The person, for every dose (pen docks to the hub)</td><td>Device delivers basal insulin with safety rules; person changes the pod</td></tr>
+    <tr><td>Risk and complexity</td><td>Lower: no automated insulin delivery; reusable pen</td><td>Higher: CGM, pump and controller each need review</td></tr>
+    <tr><td>Best for</td><td>First pilot of the linked record; people already on pens</td><td>Full automatic record for people on intensive insulin</td></tr>
+  </table></div>
+
+  <h2>Our approach: staged, one data model</h2>
+  <div class="steps">
+    <div><b>Prior-art check</b>Map existing smart pens, meters and patches; claim no novelty before this</div>
+    <div class="a"><b>Virtual bench</b>Simulate both routes (the pen page already has one) to find weak points before hardware</div>
+    <div class="b"><b>Bench + sterilisation</b>Hub and pod: insertion, sensor–insulin spacing, dose accuracy, occlusion</div>
+    <div class="b"><b>Feasibility, then pilot</b>Animal model and human feasibility; pilot the pen first (6–12 months), then the patch</div>
+    <div><b>Post-market</b>Both routes followed with our surveillance framework</div>
+  </div>
+  <p class="lead" style="margin-top:12px">Because both routes share the same data model, what the pen pilot teaches about version, use and outcomes carries straight into the patch.</p>
+
+  <div class="note"><b>Please read:</b> these are our concepts, shown as illustrative 3D models. Numbers are design targets; nothing has been built, bench-tested or clinically tested. The pen’s dose advisor would stay off in our pilot until clinically validated; adverse-event reporting continues. Regulatory routes must be confirmed with each regulator. This site collects no data.</div>
+</div>
+<footer>Concepts by Vinay Janyavula and Dr. Sriroop Reddy Ramireddy, The Apollo University · SHARE 2026, Monash University · 3D models use three.js (MIT licence)</footer>
+</body>
+</html>
